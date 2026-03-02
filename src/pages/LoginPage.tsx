@@ -35,7 +35,7 @@ export function LoginPage() {
         try {
             setError('');
             const response = await login(data.email, data.password);
-            
+
             // Check if user is admin and redirect accordingly
             if (response?.user?.email && ADMIN_EMAILS.includes(response.user.email)) {
                 console.log('Admin user detected, redirecting to /admin');
@@ -120,12 +120,17 @@ export function LoginPage() {
                             {isSubmitting ? 'Signing in...' : 'Sign In'}
                         </Button>
 
-                        <p className="text-sm text-center text-gray-600">
-                            Don't have an account?{' '}
-                            <Link to="/register" className="text-blue-600 hover:underline">
-                                Register here
+                        <div className="flex items-center justify-between">
+                            <p className="text-sm text-gray-600">
+                                Don't have an account?{' '}
+                                <Link to="/register" className="text-blue-600 hover:underline">
+                                    Register here
+                                </Link>
+                            </p>
+                            <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
+                                Forgot password?
                             </Link>
-                        </p>
+                        </div>
 
                     </form>
                 </CardContent>

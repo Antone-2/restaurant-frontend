@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -141,6 +141,13 @@ export function AdminLoginPage() {
                                 <LogIn className="w-4 h-4" />
                                 {isLoading ? 'Authenticating...' : 'Login to Admin Panel'}
                             </Button>
+
+                            {/* Forgot Password Link */}
+                            <div className="text-center mt-3">
+                                <Link to="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300 hover:underline">
+                                    Forgot Password?
+                                </Link>
+                            </div>
 
                             {/* Info Box */}
                             <div className="mt-4 p-3 bg-blue-900/30 border border-blue-600/30 rounded-lg">

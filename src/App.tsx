@@ -20,6 +20,8 @@ import EventsPage from "./pages/EventsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import CheckoutPage from "./pages/CheckoutPage";
@@ -58,6 +60,8 @@ const AppContent = () => {
         <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <LoginPage />} />
         <Route path="/register" element={isAuthenticated ? <Navigate to="/" /> : <RegisterPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Admin Routes */}
         <Route

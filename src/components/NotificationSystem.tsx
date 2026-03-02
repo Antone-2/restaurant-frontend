@@ -1,14 +1,11 @@
 import { useState, createContext, useContext, ReactNode, useEffect } from "react";
-import { X, Bell, Info, ShoppingCart, Clock, Truck, AlertCircle } from "lucide-react";
+import { X, Bell, Info, ShoppingCart, Clock, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import useSocket from "@/hooks/useSocket";
 
 // Notification types
 export type NotificationType = "order" | "reservation" | "delivery" | "promo" | "system" | "review" | "complaint" | "ticket" | "payment" | "event" | "contact" | "parking";
-
-// Notification types
-export type NotificationType = "order" | "reservation" | "delivery" | "promo" | "system";
 
 // Notification interface
 export interface Notification {
