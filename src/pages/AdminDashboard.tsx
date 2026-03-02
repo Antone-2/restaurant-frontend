@@ -5,7 +5,6 @@ import useSocket from '@/hooks/useSocket';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,6 +12,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+    Menu, X, Home, ShoppingCart, ShoppingBag, CalendarDays,
+    Building2, Users, DollarSign, Car, Megaphone, PartyPopper,
+    ChefHat, Package, BarChart3, LogOut, Plus, Trash2, Edit,
+    RefreshCw, Bell, Search, ChevronLeft, ChevronRight
+} from 'lucide-react';
 
 // Import new components
 import TableManagement from '@/components/TableManagement';
@@ -114,7 +120,7 @@ function MenuItemForm({ item, onSave, onCancel }: MenuItemFormProps) {
                         checked={formData.popular}
                         onCheckedChange={(checked) => setFormData({ ...formData, popular: checked as boolean })}
                     />
-                    <Label htmlFor="popular" className="text-sm font-normal">Mark as Popular</Label>
+                    <Label htmlFor="popular" className="text-sm font-normal">Popular</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                     <Checkbox
@@ -228,15 +234,6 @@ function ReservationEditForm({ reservation, onSave, onCancel }: ReservationEditF
                 </div>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="res-table">Table</Label>
-                <Input
-                    id="res-table"
-                    value={formData.tableName}
-                    onChange={(e) => setFormData({ ...formData, tableName: e.target.value })}
-                    placeholder="Table number or name"
-                />
-            </div>
-            <div className="space-y-2">
                 <Label htmlFor="res-status">Status</Label>
                 <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
                     <SelectTrigger>
@@ -293,10 +290,85 @@ function DeleteDialog({ open, title, description, onConfirm, onCancel }: DeleteD
     );
 }
 
+// Sidebar Navigation Item
+interface NavItem {
+    id: string;
+    label: string;
+    icon: React.ReactNode;
+}
+
+const navItems: NavItem[] = [
+    { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" /> },
+    { id: 'menu', label: 'Menu', icon: <ChefHat className="w-5 h-5" /> },
+    { id: 'orders', label: 'Orders', icon: <ShoppingBag className="w-5 h-5" /> },
+    { id: 'reservations', label: 'Reservations', icon: <CalendarDays className="w-5 h-5" /> },
+    { id: 'tables', label: 'Tables', icon: <Building2 className="w-5 h-5" /> },
+    { id: 'kitchen', label: 'Kitchen', icon: <ChefHat className="w-5 h-5" /> },
+    { id: 'inventory', label: 'Inventory', icon: <Package className="w-5 h-5" /> },
+    { id: 'staff', label: 'Staff', icon: <Users className="w-5 h-5" /> },
+    { id: 'revenue', label: 'Revenue', icon: <DollarSign className="w-5 h-5" /> },
+    { id: 'parking', label: 'Parking', icon: <Car className="w-5 h-5" /> },
+    { id: 'marketing', label: 'Marketing', icon: <Megaphone className="w-5 h-5" /> },
+    { id: 'events', label: 'Events', icon: <PartyPopper className="w-5 h-5" /> },
+];
+
+// Mobile Bottom Navigation
+function BottomNav({ activeTab, setActiveTab }: { activeTab: string; setActiveTab: (tab: string) => void }) {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden z-50 safe-area-pb">
+            <div className="flex items-center justify-around py-2">
+                {navItems.slice(0, 5).map((item) => (
+                    <button
+                        key={item.id}
+                        onClick={() => setActiveTab(item.id)}
+                        className={`flex flex-col items-center justify-center p-2 min-w-[60px] rounded-lg transition-colors ${activeTab === item.id
+                                ? 'text-blue-600 bg-blue-50'
+                                : 'text-gray-500'
+                            }`}
+                    >
+                        <div className={activeTab === item.id ? 'text-blue-600' : 'text-gray-400'}>
+                            {item.icon}
+                        </div>
+                        <span className="text-[10px] mt-1 font-medium">{item.label}</span>
+                    </button>
+                ))}
+                <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                    <SheetTrigger asChild>
+                        <button className="flex flex-col items-center justify-center p-2 min-w-[60px] rounded-lg text-gray-500">
+                            <Menu className="w-5 h-5" />
+                            <span className="text-[10px] mt-1 font-medium">More</span>
+                        </button>
+                    </SheetTrigger>
+                    <SheetContent side="bottom" className="h-[60vh] overflow-y-auto">
+                        <div className="grid grid-cols-4 gap-4 pt-4">
+                            {navItems.slice(5).map((item) => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => { setActiveTab(item.id); setIsOpen(false); }}
+                                    className={`flex flex-col items-center justify-center p-3 rounded-lg transition-colors ${activeTab === item.id
+                                            ? 'bg-blue-100 text-blue-600'
+                                            : 'bg-gray-50 text-gray-600'
+                                        }`}
+                                >
+                                    {item.icon}
+                                    <span className="text-xs mt-1 font-medium">{item.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </SheetContent>
+                </Sheet>
+            </div>
+        </div>
+    );
+}
+
 export function AdminDashboard() {
     const { user, logout } = useAuth();
     const { lastEvent } = useSocket({ autoConnect: true, isAdmin: true });
     const [activeTab, setActiveTab] = useState('analytics');
+    const [sidebarOpen, setSidebarOpen] = useState(true);
     const [menu, setMenu] = useState<any[]>([]);
     const [orders, setOrders] = useState<any[]>([]);
     const [reservations, setReservations] = useState<any[]>([]);
@@ -306,6 +378,7 @@ export function AdminDashboard() {
     const [revenue, setRevenue] = useState<any>(null);
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
+    const [isMobile, setIsMobile] = useState(false);
 
     // Filters
     const [orderStatusFilter, setOrderStatusFilter] = useState('all');
@@ -321,6 +394,19 @@ export function AdminDashboard() {
     const [deletingItem, setDeletingItem] = useState<{ type: string; id: string } | null>(null);
     const [reservationEditOpen, setReservationEditOpen] = useState(false);
     const [editingReservation, setEditingReservation] = useState<any>(null);
+
+    // Check for mobile
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+            if (window.innerWidth < 768) {
+                setSidebarOpen(false);
+            }
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Load data
     useEffect(() => {
@@ -362,7 +448,6 @@ export function AdminDashboard() {
                 adminApi.getAnalytics()
             ]);
 
-            // Extract data from paginated responses
             const extractData = (response: any) => {
                 if (Array.isArray(response)) return response;
                 return response?.data ? response.data : [];
@@ -545,464 +630,428 @@ export function AdminDashboard() {
         }
     }, [error, successMsg]);
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
-            {/* Header */}
-            <div className="bg-black text-white p-6 flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-                    <p className="text-gray-400">Welcome, {user?.name || user?.email}</p>
-                </div>
-                <div className="flex items-center space-x-4">
-                    <Button variant="outline" size="sm" onClick={loadAllData}>
-                        Refresh
-                    </Button>
-                    <Button variant="destructive" onClick={logout}>
-                        Logout
-                    </Button>
-                </div>
-            </div>
-
-            {/* Messages */}
-            {error && (
-                <Alert variant="destructive" className="m-6">
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>
-            )}
-            {successMsg && (
-                <Alert className="m-6 bg-green-100 border-green-300">
-                    <AlertDescription className="text-green-800">{successMsg}</AlertDescription>
-                </Alert>
-            )}
-
-            {/* Tabs */}
-            <div className="p-6">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                    <TabsList key="tabs-list" className="grid w-full max-w-6xl grid-cols-12">
-                        <TabsTrigger key="analytics" value="analytics">Analytics</TabsTrigger>
-                        <TabsTrigger key="menu" value="menu">Menu</TabsTrigger>
-                        <TabsTrigger key="orders" value="orders">Orders</TabsTrigger>
-                        <TabsTrigger key="reservations" value="reservations">Reservations</TabsTrigger>
-                        <TabsTrigger key="tables" value="tables">Tables</TabsTrigger>
-                        <TabsTrigger key="kitchen" value="kitchen">Kitchen</TabsTrigger>
-                        <TabsTrigger key="inventory" value="inventory">Inventory</TabsTrigger>
-                        <TabsTrigger key="staff" value="staff">Staff</TabsTrigger>
-                        <TabsTrigger key="revenue" value="revenue">Revenue</TabsTrigger>
-                        <TabsTrigger key="parking" value="parking">Parking</TabsTrigger>
-                        <TabsTrigger key="marketing" value="marketing">Marketing</TabsTrigger>
-                        <TabsTrigger key="events" value="events">Events</TabsTrigger>
-                    </TabsList>
-                    {/* Analytics Tab */}
-                    <TabsContent key="analytics-content" value="analytics" className="space-y-4">
-                        <AnalyticsDashboard />
-                    </TabsContent>
-
-                    {/* Menu Tab */}
-                    <TabsContent key="menu-content" value="menu" className="space-y-4">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <div>
-                                    <CardTitle>Menu Items ({menu.length})</CardTitle>
-                                    <CardDescription>Manage your restaurant menu</CardDescription>
-                                </div>
-                                <Button onClick={() => { setEditingMenuItem(null); setMenuFormOpen(true); }}>
-                                    Add New Item
-                                </Button>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                                    {(menu || []).map((item: any, idx: number) => (
-                                        <div key={item._id || `menu-${idx}`} className="flex justify-between items-center p-3 bg-gray-100 rounded">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <p className="font-medium">{item.name}</p>
-                                                    {item.popular && <Badge variant="secondary">Popular</Badge>}
-                                                    {!item.available && <Badge variant="destructive">Unavailable</Badge>}
-                                                </div>
-                                                <p className="text-sm text-gray-600">KES {item.price} • {item.category}</p>
-                                                {item.description && <p className="text-xs text-gray-500 mt-1">{item.description}</p>}
+    // Render content based on active tab
+    const renderContent = () => {
+        switch (activeTab) {
+            case 'analytics':
+                return <AnalyticsDashboard />;
+            case 'menu':
+                return (
+                    <Card className="border-0 shadow-lg">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <div>
+                                <CardTitle className="text-lg">Menu Items ({menu.length})</CardTitle>
+                                <CardDescription>Manage your restaurant menu</CardDescription>
+                            </div>
+                            <Button onClick={() => { setEditingMenuItem(null); setMenuFormOpen(true); }} size="sm">
+                                <Plus className="w-4 h-4 mr-1" /> Add
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                                {(menu || []).map((item: any, idx: number) => (
+                                    <div key={item._id || `menu-${idx}`} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-medium truncate">{item.name}</p>
+                                                {item.popular && <Badge variant="secondary" className="text-xs">Popular</Badge>}
+                                                {!item.available && <Badge variant="destructive" className="text-xs">Unavailable</Badge>}
                                             </div>
-                                            <div className="flex gap-2">
-                                                <Button size="sm" variant="outline" onClick={() => openEditMenu(item)}>
-                                                    Edit
-                                                </Button>
-                                                <Button size="sm" variant="destructive" onClick={() => { setDeletingItem({ type: 'menu', id: item._id }); setDeleteDialogOpen(true); }}>
-                                                    Delete
-                                                </Button>
+                                            <p className="text-sm text-gray-500">KES {item.price} • {item.category}</p>
+                                        </div>
+                                        <div className="flex gap-1 ml-2">
+                                            <Button size="sm" variant="ghost" onClick={() => openEditMenu(item)}>
+                                                <Edit className="w-4 h-4" />
+                                            </Button>
+                                            <Button size="sm" variant="ghost" className="text-red-500" onClick={() => { setDeletingItem({ type: 'menu', id: item._id }); setDeleteDialogOpen(true); }}>
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            case 'orders':
+                return (
+                    <Card className="border-0 shadow-lg">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <div>
+                                <CardTitle className="text-lg">Orders ({orders.length})</CardTitle>
+                                <CardDescription>Manage customer orders</CardDescription>
+                            </div>
+                            <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
+                                <SelectTrigger className="w-36">
+                                    <SelectValue placeholder="Filter" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Status</SelectItem>
+                                    <SelectItem value="pending">Pending</SelectItem>
+                                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                                    <SelectItem value="preparing">Preparing</SelectItem>
+                                    <SelectItem value="ready">Ready</SelectItem>
+                                    <SelectItem value="completed">Completed</SelectItem>
+                                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                                {(orders || []).map((order: any, idx: number) => (
+                                    <div key={order._id || `order-${idx}`} className="p-4 border rounded-lg bg-white">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="min-w-0 flex-1">
+                                                <p className="font-semibold truncate">{order.customerName}</p>
+                                                <p className="text-xs text-gray-500">{order._id}</p>
+                                                <p className="text-sm truncate">{order.email}</p>
+                                            </div>
+                                            <div className="text-right ml-2">
+                                                <p className="font-bold">{formatCurrency(order.total)}</p>
+                                                <p className="text-xs text-gray-500">{order.paymentMethod}</p>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* Orders Tab */}
-                    <TabsContent key="orders-content" value="orders" className="space-y-4">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <div>
-                                    <CardTitle>Orders ({orders.length})</CardTitle>
-                                    <CardDescription>Manage customer orders</CardDescription>
-                                </div>
-                                <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
-                                    <SelectTrigger className="w-40">
-                                        <SelectValue placeholder="Filter by status" />
+                                        <div className="mt-2 flex items-center gap-2 flex-wrap">
+                                            <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
+                                            <Select value={order.status} onValueChange={(value) => handleUpdateOrderStatus(order._id, value)}>
+                                                <SelectTrigger className="h-8 w-28">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="pending">Pending</SelectItem>
+                                                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                                                    <SelectItem value="preparing">Preparing</SelectItem>
+                                                    <SelectItem value="ready">Ready</SelectItem>
+                                                    <SelectItem value="completed">Completed</SelectItem>
+                                                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            case 'reservations':
+                return (
+                    <Card className="border-0 shadow-lg">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <div>
+                                <CardTitle className="text-lg">Reservations ({reservations.length})</CardTitle>
+                                <CardDescription>Manage table reservations</CardDescription>
+                            </div>
+                            <div className="flex gap-2">
+                                <Input
+                                    type="date"
+                                    value={reservationDateFilter}
+                                    onChange={(e) => setReservationDateFilter(e.target.value)}
+                                    className="w-32 h-8 bg-white"
+                                />
+                                <Select value={reservationStatusFilter} onValueChange={setReservationStatusFilter}>
+                                    <SelectTrigger className="w-28 h-8">
+                                        <SelectValue placeholder="Status" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Status</SelectItem>
+                                        <SelectItem value="all">All</SelectItem>
                                         <SelectItem value="pending">Pending</SelectItem>
                                         <SelectItem value="confirmed">Confirmed</SelectItem>
-                                        <SelectItem value="preparing">Preparing</SelectItem>
-                                        <SelectItem value="ready">Ready</SelectItem>
-                                        <SelectItem value="completed">Completed</SelectItem>
                                         <SelectItem value="cancelled">Cancelled</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                                    {(orders || []).map((order: any, idx: number) => (
-                                        <div key={order._id || `order-${idx}`} className="p-4 border rounded bg-white">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div>
-                                                    <p className="font-semibold">{order.customerName}</p>
-                                                    <p className="text-xs text-gray-500">{order._id}</p>
-                                                    <p className="text-sm">{order.email}</p>
-                                                    <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleString()}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="font-bold text-lg">KES {order.total}</p>
-                                                    <p className="text-xs text-gray-500">{order.paymentMethod} • {order.paymentStatus}</p>
-                                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                                {(reservations || []).map((res: any, idx: number) => (
+                                    <div key={res._id || `res-${idx}`} className="p-4 border rounded-lg bg-white">
+                                        <div className="flex justify-between items-start">
+                                            <div className="min-w-0 flex-1">
+                                                <p className="font-semibold">{res.name}</p>
+                                                <p className="text-sm text-gray-600">{res.phone}</p>
+                                                <p className="text-sm mt-1">
+                                                    <CalendarDays className="w-3 h-3 inline mr-1" />
+                                                    {res.date} at {res.time}
+                                                </p>
+                                                <p className="text-sm">
+                                                    <Users className="w-3 h-3 inline mr-1" />
+                                                    {res.guests} guests
+                                                </p>
                                             </div>
-
-                                            {/* Order Items */}
-                                            <div className="mt-2 p-2 bg-gray-50 rounded">
-                                                {(order.items || []).map((item: any, idx: number) => (
-                                                    <div key={`${order._id}-item-${idx}`} className="text-sm flex justify-between">
-                                                        <span>{item.name} x{item.quantity}</span>
-                                                        <span>KES {item.price * item.quantity}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-
-                                            <div className="mt-3 flex items-center gap-2">
-                                                <Label>Status:</Label>
-                                                <Select value={order.status} onValueChange={(value) => handleUpdateOrderStatus(order._id, value)}>
-                                                    <SelectTrigger className="w-32">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="pending">Pending</SelectItem>
-                                                        <SelectItem value="confirmed">Confirmed</SelectItem>
-                                                        <SelectItem value="preparing">Preparing</SelectItem>
-                                                        <SelectItem value="ready">Ready</SelectItem>
-                                                        <SelectItem value="completed">Completed</SelectItem>
-                                                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* Reservations Tab */}
-                    <TabsContent key="reservations-content" value="reservations" className="space-y-4">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <div>
-                                    <CardTitle>Reservations ({reservations.length})</CardTitle>
-                                    <CardDescription>Manage table reservations</CardDescription>
-                                </div>
-                                <div className="flex gap-2">
-                                    <Input
-                                        type="date"
-                                        value={reservationDateFilter}
-                                        onChange={(e) => setReservationDateFilter(e.target.value)}
-                                        className="w-40 bg-white"
-                                    />
-                                    <Select value={reservationStatusFilter} onValueChange={setReservationStatusFilter}>
-                                        <SelectTrigger className="w-40">
-                                            <SelectValue placeholder="Filter by status" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Status</SelectItem>
-                                            <SelectItem value="pending">Pending</SelectItem>
-                                            <SelectItem value="confirmed">Confirmed</SelectItem>
-                                            <SelectItem value="cancelled">Cancelled</SelectItem>
-                                            <SelectItem value="completed">Completed</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                                    {(reservations || []).map((res: any, idx: number) => (
-                                        <div key={res._id || `res-${idx}`} className="p-4 border rounded bg-white">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="font-semibold">{res.name}</p>
-                                                    <p className="text-sm text-gray-600">{res.email}</p>
-                                                    <p className="text-sm text-gray-600">{res.phone}</p>
-                                                    <p className="text-sm mt-2">
-                                                        <strong>Date:</strong> {res.date} at {res.time}
-                                                    </p>
-                                                    <p className="text-sm">
-                                                        <strong>Guests:</strong> {res.guests} • <strong>Table:</strong> {res.tableName || 'Not assigned'}
-                                                    </p>
-                                                    {res.specialRequests && (
-                                                        <p className="text-xs text-gray-500 mt-1">Notes: {res.specialRequests}</p>
+                                            <div className="flex flex-col gap-1 ml-2">
+                                                <Badge className={getStatusColor(res.status)}>{res.status}</Badge>
+                                                <div className="flex gap-1">
+                                                    <Button size="sm" variant="ghost" onClick={() => { setEditingReservation(res); setReservationEditOpen(true); }}>
+                                                        <Edit className="w-3 h-3" />
+                                                    </Button>
+                                                    {res.status === 'pending' && (
+                                                        <Button size="sm" className="bg-green-500 hover:bg-green-600 h-7" onClick={() => handleUpdateReservationStatus(res._id, 'confirmed')}>
+                                                            ✓
+                                                        </Button>
                                                     )}
                                                 </div>
-                                                <div className="flex flex-col gap-2">
-                                                    <Badge className={getStatusColor(res.status)}>{res.status}</Badge>
-                                                    <div className="flex gap-1">
-                                                        <Button size="sm" variant="outline" onClick={() => { setEditingReservation(res); setReservationEditOpen(true); }}>
-                                                            Edit
-                                                        </Button>
-                                                        {res.status === 'pending' && (
-                                                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleUpdateReservationStatus(res._id, 'confirmed')}>
-                                                                Confirm
-                                                            </Button>
-                                                        )}
-                                                        {res.status === 'confirmed' && (
-                                                            <Button size="sm" variant="outline" onClick={() => handleUpdateReservationStatus(res._id, 'completed')}>
-                                                                Complete
-                                                            </Button>
-                                                        )}
-                                                        {res.status !== 'cancelled' && res.status !== 'completed' && (
-                                                            <Button size="sm" variant="destructive" onClick={() => { setDeletingItem({ type: 'reservation', id: res._id }); setDeleteDialogOpen(true); }}>
-                                                                Cancel
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </div>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* Tables Tab */}
-                    <TabsContent key="tables-content" value="tables" className="space-y-4">
-                        <TableManagement />
-                    </TabsContent>
-
-                    {/* Kitchen Tab */}
-                    <TabsContent key="kitchen-content" value="kitchen" className="space-y-4">
-                        <KitchenDisplaySystem />
-                    </TabsContent>
-
-                    {/* Inventory Tab */}
-                    <TabsContent key="inventory-content" value="inventory" className="space-y-4">
-                        <InventoryDashboard />
-                    </TabsContent>
-
-                    {/* Staff Tab */}
-                    <TabsContent key="staff-content" value="staff" className="space-y-4">
-                        <StaffManagement />
-                    </TabsContent>
-
-                    {/* Revenue Tab */}
-                    <TabsContent key="revenue-content" value="revenue" className="space-y-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Revenue Reports</CardTitle>
-                                <CardDescription>View revenue analytics and reports</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex gap-4 mb-6">
-                                    <div className="flex gap-2">
-                                        <Button
-                                            variant={revenuePeriod === 'daily' ? 'default' : 'outline'}
-                                            onClick={() => setRevenuePeriod('daily')}
-                                        >
-                                            Daily
-                                        </Button>
-                                        <Button
-                                            variant={revenuePeriod === 'weekly' ? 'default' : 'outline'}
-                                            onClick={() => setRevenuePeriod('weekly')}
-                                        >
-                                            Weekly
-                                        </Button>
-                                        <Button
-                                            variant={revenuePeriod === 'monthly' ? 'default' : 'outline'}
-                                            onClick={() => setRevenuePeriod('monthly')}
-                                        >
-                                            Monthly
-                                        </Button>
                                     </div>
-                                    <div className="flex gap-2 items-center">
-                                        <Input
-                                            type="date"
-                                            value={dateRange.startDate}
-                                            onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                                            className="w-40 bg-white"
-                                            placeholder="Start Date"
-                                        />
-                                        <span className="text-gray-500">to</span>
-                                        <Input
-                                            type="date"
-                                            value={dateRange.endDate}
-                                            onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                                            className="w-40 bg-white"
-                                            placeholder="End Date"
-                                        />
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            case 'tables':
+                return <TableManagement />;
+            case 'kitchen':
+                return <KitchenDisplaySystem />;
+            case 'inventory':
+                return <InventoryDashboard />;
+            case 'staff':
+                return <StaffManagement />;
+            case 'revenue':
+                return (
+                    <Card className="border-0 shadow-lg">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Revenue Reports</CardTitle>
+                            <CardDescription>View revenue analytics</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex gap-2 mb-4 flex-wrap">
+                                {['daily', 'weekly', 'monthly'].map((period) => (
+                                    <Button
+                                        key={period}
+                                        variant={revenuePeriod === period ? 'default' : 'outline'}
+                                        size="sm"
+                                        onClick={() => setRevenuePeriod(period)}
+                                    >
+                                        {period.charAt(0).toUpperCase() + period.slice(1)}
+                                    </Button>
+                                ))}
+                            </div>
+                            {revenue && (
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-xl">
+                                        <p className="text-sm opacity-80">Total Revenue</p>
+                                        <p className="text-xl font-bold">{formatCurrency(revenue.totalRevenue)}</p>
+                                    </div>
+                                    <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-4 rounded-xl">
+                                        <p className="text-sm opacity-80">Total Orders</p>
+                                        <p className="text-xl font-bold">{revenue.orderCount}</p>
+                                    </div>
+                                    <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-4 rounded-xl">
+                                        <p className="text-sm opacity-80">Avg Order</p>
+                                        <p className="text-xl font-bold">{formatCurrency(revenue.averageOrderValue)}</p>
                                     </div>
                                 </div>
-
-                                {revenue && (
-                                    <>
-                                        {/* Summary Cards */}
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                            <Card>
-                                                <CardHeader className="pb-2">
-                                                    <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                                                </CardHeader>
-                                                <CardContent>
-                                                    <div className="text-2xl font-bold">{formatCurrency(revenue.totalRevenue)}</div>
-                                                </CardContent>
-                                            </Card>
-                                            <Card>
-                                                <CardHeader className="pb-2">
-                                                    <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-                                                </CardHeader>
-                                                <CardContent>
-                                                    <div className="text-2xl font-bold">{revenue.orderCount}</div>
-                                                </CardContent>
-                                            </Card>
-                                            <Card>
-                                                <CardHeader className="pb-2">
-                                                    <CardTitle className="text-sm font-medium">Average Order Value</CardTitle>
-                                                </CardHeader>
-                                                <CardContent>
-                                                    <div className="text-2xl font-bold">{formatCurrency(revenue.averageOrderValue)}</div>
-                                                </CardContent>
-                                            </Card>
-                                        </div>
-
-                                        {/* Daily Revenue Chart */}
-                                        <Card className="mb-4">
-                                            <CardHeader>
-                                                <CardTitle>Daily Revenue (Last 7 Days)</CardTitle>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="space-y-2">
-                                                    {(revenue.dailyRevenue || []).map((day: any, idx: number) => (
-                                                        <div key={`day-${idx}-${day.date}`} className="flex justify-between items-center">
-                                                            <span className="text-sm w-24">{day.date}</span>
-                                                            <div className="flex-1 mx-4 h-4 bg-gray-200 rounded overflow-hidden">
-                                                                <div
-                                                                    className="h-full bg-green-500"
-                                                                    style={{ width: `${revenue.dailyRevenue ? (day.revenue / Math.max(...revenue.dailyRevenue.map((d: any) => d.revenue))) * 100 : 0}%` }}
-                                                                />
-                                                            </div>
-                                                            <span className="text-sm font-medium w-28 text-right">{formatCurrency(day.revenue)}</span>
-                                                            <span className="text-xs text-gray-500 w-16 text-right">({day.orders} orders)</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-
-                                        {/* Monthly Revenue Chart */}
-                                        <Card>
-                                            <CardHeader>
-                                                <CardTitle>Monthly Revenue (Last 12 Months)</CardTitle>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className="space-y-2">
-                                                    {(revenue.monthlyRevenue || []).map((month: any, idx: number) => (
-                                                        <div key={`month-${idx}-${month.month}`} className="flex justify-between items-center">
-                                                            <span className="text-sm w-16">{month.month}</span>
-                                                            <div className="flex-1 mx-4 h-4 bg-gray-200 rounded overflow-hidden">
-                                                                <div
-                                                                    className="h-full bg-blue-500"
-                                                                    style={{ width: `${revenue.monthlyRevenue ? (month.revenue / Math.max(...revenue.monthlyRevenue.map((m: any) => m.revenue))) * 100 : 0}%` }}
-                                                                />
-                                                            </div>
-                                                            <span className="text-sm font-medium w-28 text-right">{formatCurrency(month.revenue)}</span>
-                                                            <span className="text-xs text-gray-500 w-16 text-right">({month.orders} orders)</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    </>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* Parking Tab */}
-                    <TabsContent key="parking-content" value="parking" className="space-y-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Parking Reservations ({parking.length})</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                                    {(parking || []).map((slot: any, idx: number) => (
-                                        <div key={slot._id || `parking-${idx}`} className="p-4 border rounded bg-white">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="font-semibold">{slot.name}</p>
-                                                    <p className="text-sm text-gray-600">{slot.vehiclePlate}</p>
-                                                    <p className="text-sm">{slot.date} • {slot.time}</p>
-                                                    <p className="text-xs text-gray-500">{slot.email} | {slot.phone}</p>
-                                                </div>
-                                                <Badge className="bg-blue-100 text-blue-800">Slot {slot.slotNumber}</Badge>
+                            )}
+                        </CardContent>
+                    </Card>
+                );
+            case 'parking':
+                return (
+                    <Card className="border-0 shadow-lg">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Parking ({parking.length})</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                                {(parking || []).map((slot: any, idx: number) => (
+                                    <div key={slot._id || `parking-${idx}`} className="p-3 border rounded-lg bg-white">
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <p className="font-medium">{slot.name}</p>
+                                                <p className="text-sm text-gray-500">{slot.vehiclePlate}</p>
                                             </div>
+                                            <Badge className="bg-blue-100 text-blue-800">Slot {slot.slotNumber}</Badge>
                                         </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            case 'marketing':
+                return <MarketingPromotions />;
+            case 'events':
+                return (
+                    <Card className="border-0 shadow-lg">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Events ({events.length})</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                                {(events || []).map((event: any, idx: number) => (
+                                    <div key={event._id || `event-${idx}`} className="p-3 border rounded-lg bg-white">
+                                        <p className="font-medium">{event.eventType}</p>
+                                        <p className="text-sm text-gray-500">{event.name}</p>
+                                        <p className="text-sm">{event.date} • {event.guests} guests</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            default:
+                return null;
+        }
+    };
 
-                    {/* Marketing Tab */}
-                    <TabsContent key="marketing-content" value="marketing" className="space-y-4">
-                        <MarketingPromotions />
-                    </TabsContent>
-
-                    {/* Events Tab */}
-                    <TabsContent key="events-content" value="events" className="space-y-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Event Inquiries ({events.length})</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                                    {(events || []).map((event: any, idx: number) => (
-                                        <div key={event._id || `event-${idx}`} className="p-4 border rounded bg-white">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="font-semibold">{event.eventType}</p>
-                                                    <p className="text-sm text-gray-600">{event.name}</p>
-                                                    <p className="text-sm">{event.date} • {event.guests} guests</p>
-                                                    <p className="text-xs text-gray-500">{event.email} | {event.phone}</p>
-                                                </div>
-                                                <Badge className="bg-purple-100 text-purple-800">New</Badge>
-                                            </div>
-                                        </div>
-                                    ))}
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+            {/* Header - Mobile */}
+            <div className="md:hidden bg-black/50 backdrop-blur-xl border-b border-white/10 sticky top-0 z-40">
+                <div className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-3">
+                        <Sheet>
+                            <SheetTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-white">
+                                    <Menu className="w-6 h-6" />
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent side="left" className="w-72 bg-slate-900 border-slate-700">
+                                <div className="flex flex-col h-full">
+                                    <div className="p-4 border-b border-slate-700">
+                                        <h2 className="text-xl font-bold text-white">Admin Panel</h2>
+                                        <p className="text-sm text-gray-400 truncate">{user?.email}</p>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto py-4">
+                                        {navItems.map((item) => (
+                                            <button
+                                                key={item.id}
+                                                onClick={() => { setActiveTab(item.id); setSidebarOpen(true); }}
+                                                className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${activeTab === item.id
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'text-gray-300 hover:bg-slate-800'
+                                                    }`}
+                                            >
+                                                {item.icon}
+                                                <span>{item.label}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="p-4 border-t border-slate-700">
+                                        <Button variant="destructive" className="w-full" onClick={logout}>
+                                            <LogOut className="w-4 h-4 mr-2" />
+                                            Logout
+                                        </Button>
+                                    </div>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                </Tabs>
+                            </SheetContent>
+                        </Sheet>
+                        <div>
+                            <h1 className="text-white font-bold text-lg">Admin</h1>
+                            <p className="text-gray-400 text-xs">Dashboard</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={loadAllData} className="text-white">
+                            <RefreshCw className="w-5 h-5" />
+                        </Button>
+                    </div>
+                </div>
             </div>
+
+            {/* Desktop Sidebar */}
+            <div className="hidden md:flex">
+                <div
+                    className={`fixed left-0 top-0 h-full bg-slate-900/95 backdrop-blur-xl border-r border-white/10 transition-all duration-300 z-40 ${sidebarOpen ? 'w-64' : 'w-16'
+                        }`}
+                >
+                    <div className="flex flex-col h-full">
+                        {/* Logo */}
+                        <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                            {sidebarOpen && (
+                                <div>
+                                    <h2 className="text-xl font-bold text-white">Admin Panel</h2>
+                                    <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                                </div>
+                            )}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setSidebarOpen(!sidebarOpen)}
+                                className="text-gray-400 hover:text-white"
+                            >
+                                {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                            </Button>
+                        </div>
+
+                        {/* Navigation */}
+                        <div className="flex-1 overflow-y-auto py-4">
+                            {navItems.map((item) => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setActiveTab(item.id)}
+                                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${activeTab === item.id
+                                            ? 'bg-blue-600 text-white'
+                                            : 'text-gray-300 hover:bg-slate-800'
+                                        }`}
+                                >
+                                    <div className={activeTab === item.id ? 'text-white' : 'text-gray-400'}>
+                                        {item.icon}
+                                    </div>
+                                    {sidebarOpen && <span>{item.label}</span>}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-4 border-t border-white/10">
+                            {sidebarOpen ? (
+                                <Button variant="destructive" className="w-full" onClick={logout}>
+                                    <LogOut className="w-4 h-4 mr-2" />
+                                    Logout
+                                </Button>
+                            ) : (
+                                <Button variant="destructive" size="icon" onClick={logout}>
+                                    <LogOut className="w-4 h-4" />
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <div className={`transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-16'} ${isMobile ? 'ml-0' : ''}`}>
+                {/* Desktop Header */}
+                <div className="hidden md:block bg-black/20 backdrop-blur-xl border-b border-white/10">
+                    <div className="flex justify-between items-center p-4">
+                        <div>
+                            <h1 className="text-2xl font-bold text-white">{navItems.find(n => n.id === activeTab)?.label || 'Dashboard'}</h1>
+                            <p className="text-gray-400">Welcome back, {user?.name || user?.email}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={loadAllData} className="bg-white/10 text-white border-white/20 hover:bg-white/20">
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                Refresh
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Messages */}
+                {error && (
+                    <Alert variant="destructive" className="m-4 md:mx-6">
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                )}
+                {successMsg && (
+                    <Alert className="m-4 md:mx-6 bg-green-100 border-green-300">
+                        <AlertDescription className="text-green-800">{successMsg}</AlertDescription>
+                    </Alert>
+                )}
+
+                {/* Content */}
+                <div className="p-4 md:p-6 pb-24 md:pb-6">
+                    {renderContent()}
+                </div>
+            </div>
+
+            {/* Mobile Bottom Navigation */}
+            <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
             {/* Menu Item Form Dialog */}
             <Dialog open={menuFormOpen} onOpenChange={setMenuFormOpen}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{editingMenuItem ? 'Edit Menu Item' : 'Add New Menu Item'}</DialogTitle>
                     </DialogHeader>
@@ -1016,7 +1065,7 @@ export function AdminDashboard() {
 
             {/* Reservation Edit Dialog */}
             <Dialog open={reservationEditOpen} onOpenChange={setReservationEditOpen}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Edit Reservation</DialogTitle>
                     </DialogHeader>
