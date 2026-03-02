@@ -3,6 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Heart, Flame, Leaf, Wheat } from 'lucide-react';
+import env from '@/lib/env';
+
+const API_BASE_URL = `${env.VITE_API_URL}/api`;
 
 interface DietaryTag {
     vegan: boolean;
@@ -50,8 +53,8 @@ const MenuFiltersAndRecommendations = () => {
         setLoading(true);
         try {
             const [menuRes, recRes] = await Promise.all([
-                fetch('http://localhost:3001/api/menu'),
-                fetch('http://localhost:3001/api/menu/recommendations', {
+                fetch('${API_BASE_URL}/api/menu'),
+                fetch('${API_BASE_URL}/api/menu/recommendations', {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('authToken')}`
                     }

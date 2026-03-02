@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import ScrollToTop from "./components/ScrollToTop";
 import Cart from "@/components/Cart";
 import ChatWidget from "@/components/ChatWidget";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
@@ -24,6 +25,9 @@ import AdminLoginPage from "./pages/AdminLoginPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import OrderDetailsPage from "./pages/OrderDetailsPage";
 import NotFound from "./pages/NotFound";
+import OrderHistory from "./pages/OrderHistory";
+import UserProfile from "./pages/UserProfile";
+import ReviewHistory from "./pages/ReviewHistory";
 import ParkingReservation from "./components/ParkingReservation";
 import { CartProvider } from "@/context/CartContext";
 import { NotificationProvider, NotificationBell } from "@/components/NotificationSystem";
@@ -81,6 +85,9 @@ const AppContent = () => {
         <Route path="/orders/:id" element={<OrderDetailsPage />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/parking" element={<ParkingReservation />} />
+        <Route path="/profile" element={<UserProfile />} />
+        <Route path="/order-history" element={<OrderHistory />} />
+        <Route path="/my-reviews" element={<ReviewHistory />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
 
@@ -99,18 +106,30 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <CartProvider>
-        <NotificationProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppContent />
-            </BrowserRouter>
-          </TooltipProvider>
-        </NotificationProvider>
+        <NotificationWrapper />
       </CartProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
+
+// Wrapper to access auth context for notification settings
+const NotificationWrapper = () => {
+  const { user } = useAuth();
+  const adminEmails = ['admin@thequill.com', 'thequillrestaurant@gmail.com', 'pomraningrichard@gmail.com'];
+  const isAdmin = !!(user?.email && adminEmails.includes(user.email));
+
+  return (
+    <NotificationProvider isAdmin={isAdmin}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <ScrollToTop />
+          <AppContent />
+        </BrowserRouter>
+      </TooltipProvider>
+    </NotificationProvider>
+  );
+};
 
 export default App;

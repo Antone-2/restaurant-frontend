@@ -8,6 +8,9 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { User, Mail, Phone, MapPin, Lock, LogOut, ArrowLeft, CreditCard, Trash2, Check, Plus, Download } from "lucide-react";
+import env from '@/lib/env';
+
+const API_BASE_URL = `${env.VITE_API_URL}/api`;
 
 const UserProfile = () => {
     const { user, logout, isAuthenticated, updateProfile } = useAuth();
@@ -58,7 +61,7 @@ const UserProfile = () => {
     const fetchPaymentMethods = async () => {
         setLoadingPayments(true);
         try {
-            const response = await fetch("http://localhost:3001/api/auth/payment-methods", {
+            const response = await fetch("${API_BASE_URL}/api/auth/payment-methods", {
                 method: "GET",
                 headers: {
                     "Authorization": `Bearer ${localStorage.getItem("authToken")}`
@@ -99,7 +102,7 @@ const UserProfile = () => {
                     mobileNumber: paymentForm.mobileNumber
                 };
 
-            const response = await fetch("http://localhost:3001/api/auth/payment-methods", {
+            const response = await fetch("${API_BASE_URL}/api/auth/payment-methods", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -144,7 +147,7 @@ const UserProfile = () => {
 
         setLoading(true);
         try {
-            const response = await fetch(`http://localhost:3001/api/auth/payment-methods/${methodId}`, {
+            const response = await fetch(`${API_BASE_URL}/api/auth/payment-methods/${methodId}`, {
                 method: "DELETE",
                 headers: {
                     "Authorization": `Bearer ${localStorage.getItem("authToken")}`
@@ -175,7 +178,7 @@ const UserProfile = () => {
     const handleSetDefaultPayment = async (methodId: string) => {
         setLoading(true);
         try {
-            const response = await fetch(`http://localhost:3001/api/auth/payment-methods/${methodId}`, {
+            const response = await fetch(`${API_BASE_URL}/api/auth/payment-methods/${methodId}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -208,7 +211,7 @@ const UserProfile = () => {
     const handleDownloadData = async () => {
         setLoading(true);
         try {
-            const response = await fetch("http://localhost:3001/api/auth/download-data", {
+            const response = await fetch("${API_BASE_URL}/api/auth/download-data", {
                 method: "GET",
                 headers: {
                     "Authorization": `Bearer ${localStorage.getItem("authToken")}`
@@ -257,7 +260,7 @@ const UserProfile = () => {
 
         setDeletingAccount(true);
         try {
-            const response = await fetch("http://localhost:3001/api/auth/account", {
+            const response = await fetch("${API_BASE_URL}/api/auth/account", {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
@@ -334,7 +337,7 @@ const UserProfile = () => {
         setLoading(true);
         try {
             // Assuming there's a password change endpoint
-            const response = await fetch("http://localhost:3001/api/auth/change-password", {
+            const response = await fetch("${API_BASE_URL}/api/auth/change-password", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Package, CheckCircle, Clock, Truck, Phone, MessageCircle } from 'lucide-react';
+import env from '@/lib/env';
+
+const API_BASE_URL = `${env.VITE_API_URL}/api`;
 
 interface DeliveryStatus {
     status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'out_for_delivery' | 'delivered' | 'cancelled';
@@ -132,7 +135,7 @@ export function DeliveryTracking({ orderId }: { orderId: string }) {
         setLoading(true);
 
         try {
-            const response = await fetch(`http://localhost:3001/api/orders/${id}`, {
+            const response = await fetch(`http://${API_BASE_URL}/api/orders/${id}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -335,3 +338,4 @@ export function DeliveryTracking({ orderId }: { orderId: string }) {
 }
 
 export default DeliveryTracking;
+

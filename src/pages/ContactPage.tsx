@@ -5,6 +5,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import env from '@/lib/env';
+
+const API_BASE_URL = `${env.VITE_API_URL}/api`;
 
 const ContactPage = () => {
   const { toast } = useToast();
@@ -16,7 +19,7 @@ const ContactPage = () => {
     setSending(true);
 
     try {
-      const res = await fetch('http://localhost:3001/api/contact', {
+      const res = await fetch(`${API_BASE_URL}/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)

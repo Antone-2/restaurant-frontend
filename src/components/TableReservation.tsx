@@ -8,6 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, Clock, Users, CheckCircle, XCircle } from "lucide-react";
+import env from '@/lib/env';
+
+const API_BASE_URL = `${env.VITE_API_URL}/api`;
 import { useToast } from "@/components/ui/use-toast";
 
 const TIME_SLOTS = [
@@ -126,7 +129,7 @@ const TableReservation = () => {
                 specialRequests: formData.specialRequests
             };
 
-            const response = await fetch('http://localhost:3001/api/reservations', {
+            const response = await fetch('${API_BASE_URL}/api/reservations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(reservationData)

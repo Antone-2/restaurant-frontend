@@ -4,6 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useToast } from '@/hooks/use-toast';
 import { TrendingUp, Users, ShoppingCart, DollarSign } from 'lucide-react';
+import env from '@/lib/env';
+
+const API_BASE_URL = `${env.VITE_API_URL}/api`;
 
 interface AnalyticsData {
     dailyRevenue: Array<{ date: string; revenue: number; orders: number }>;
@@ -88,7 +91,7 @@ const AnalyticsDashboard = () => {
     const fetchAnalytics = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`http://localhost:3001/api/admin/analytics?range=${dateRange}`, {
+            const response = await fetch(`${API_BASE_URL}/api/admin/analytics?range=${dateRange}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('authToken')}`

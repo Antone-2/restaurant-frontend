@@ -1,7 +1,11 @@
-import { useState, createContext, useContext, ReactNode } from "react";
-import { X, Bell, Info, ShoppingCart, Clock, Truck } from "lucide-react";
+import { useState, createContext, useContext, ReactNode, useEffect } from "react";
+import { X, Bell, Info, ShoppingCart, Clock, Truck, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import useSocket from "@/hooks/useSocket";
+
+// Notification types
+export type NotificationType = "order" | "reservation" | "delivery" | "promo" | "system" | "review" | "complaint" | "ticket" | "payment" | "event" | "contact" | "parking";
 
 // Notification types
 export type NotificationType = "order" | "reservation" | "delivery" | "promo" | "system";
@@ -32,7 +36,9 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-export const NotificationProvider = ({ children }: { children: ReactNode }) => {
+export const NotificationProvider = ({ children, isAdmin = false }: { children: ReactNode; isAdmin?: boolean }) => {
+    const { toast } = useToast();
+    const socket = useSocket({ autoConnect: true, isAdmin });
     const [notifications, setNotifications] = useState<Notification[]>([
         {
             id: "1",
@@ -43,6 +49,134 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             read: false,
         },
     ]);
+
+    // Listen for real-time notifications
+    useEffect(() => {
+        if (!socket?.lastEvent) return;
+
+        const { type, data } = socket.lastEvent;
+        let newNotification: Omit<Notification, "id" | "timestamp" | "read"> | null = null;
+        let toastMessage: { title: string; description: string } | null = null;
+
+        switch (type) {
+            case "order:new":
+                newNotification = {
+                    type: "order",
+                    title: "New Order Received!",
+                    message: `Order #${data.orderId?.slice(-6) || ' Unknown'} has been placed.`,
+                };
+                toastMessage = {
+                    title: "🔔 New Order!",
+                    description: `Order #${data.orderId?.slice(-6)} received`,
+                };
+                break;
+            case "order:updated":
+                newNotification = {
+                    type: "order",
+                    title: "Order Updated",
+                    message: `Order #${data.orderId?.slice(-6)} status: ${data.status}`,
+                };
+                break;
+            case "order:paymentUpdated":
+                newNotification = {
+                    type: "payment",
+                    title: "Payment Updated",
+                    message: `Order #${data.orderId?.slice(-6)} payment was ${data.paymentStatus}`,
+                };
+                toastMessage = {
+                    title: "💳 Payment Update",
+                    description: `Order #${data.orderId?.slice(-6)} - ${data.paymentStatus}`,
+                };
+                break;
+            case "reservation:new":
+                newNotification = {
+                    type: "reservation",
+                    title: "New Reservation!",
+                    message: `New table reservation for ${data.guests || ''} guests.`,
+                };
+                toastMessage = {
+                    title: "📅 New Reservation!",
+                    description: `Table reserved for ${data.guests || '?'} guests`,
+                };
+                break;
+            case "reservation:updated":
+                newNotification = {
+                    type: "reservation",
+                    title: "Reservation Updated",
+                    message: `Reservation #${data.reservationId?.slice(-6)} status: ${data.status}`,
+                };
+                break;
+            case "review:new":
+                newNotification = {
+                    type: "review",
+                    title: "New Review!",
+                    message: `New ${data.rating || 5}-star review received.`,
+                };
+                toastMessage = {
+                    title: "⭐ New Review!",
+                    description: `${data.rating || 5} star review received`,
+                };
+                break;
+            case "complaint:new":
+                newNotification = {
+                    type: "system",
+                    title: "New Complaint!",
+                    message: `New complaint received: ${data.subject || 'General issue'}`,
+                };
+                toastMessage = {
+                    title: "⚠️ New Complaint!",
+                    description: data.subject || 'New complaint submitted',
+                };
+                break;
+            case "ticket:new":
+                newNotification = {
+                    type: "ticket",
+                    title: "New Support Ticket!",
+                    message: `Ticket: ${data.subject || 'Support request'}`,
+                };
+                toastMessage = {
+                    title: "🎫 New Ticket!",
+                    description: data.subject || 'New support request',
+                };
+                break;
+            case "ticket:updated":
+                newNotification = {
+                    type: "ticket",
+                    title: "Ticket Updated",
+                    message: `Ticket #${data.ticketId?.slice(-6)} status: ${data.status}`,
+                };
+                break;
+            case "inventory:low":
+                newNotification = {
+                    type: "system",
+                    title: "Low Stock Alert!",
+                    message: `${data.menuItemName || 'Item'} is running low on stock.`,
+                };
+                toastMessage = {
+                    title: "⚠️ Low Stock!",
+                    description: `${data.menuItemName || 'Item'} stock is low`,
+                };
+                break;
+            case "notification:push":
+                newNotification = {
+                    type: data.type || "system",
+                    title: data.title || "Notification",
+                    message: data.message || "You have a new notification",
+                };
+                break;
+        }
+
+        if (newNotification) {
+            addNotification(newNotification);
+        }
+        if (toastMessage && isAdmin) {
+            toast({
+                title: toastMessage.title,
+                description: toastMessage.description,
+                className: "border-l-4 border-l-blue-500",
+            });
+        }
+    }, [socket?.lastEvent, isAdmin]);
 
     const unreadCount = notifications.filter((n) => !n.read).length;
 

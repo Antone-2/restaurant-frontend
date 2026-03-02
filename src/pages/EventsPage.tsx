@@ -10,6 +10,9 @@ import heroImage from "@/assets/hero-restaurant.jpg";
 import dish1 from "@/assets/dish-1.jpg";
 import dish2 from "@/assets/dish-2.jpg";
 import aboutImage from "@/assets/about-restaurant.jpg";
+import env from '@/lib/env';
+
+const API_BASE_URL = `${env.VITE_API_URL}/api`;
 
 const EventsPage = () => {
     const { toast } = useToast();
@@ -63,7 +66,7 @@ const EventsPage = () => {
         setSending(true);
 
         try {
-            const res = await fetch('http://localhost:3001/api/events', {
+            const res = await fetch(`${API_BASE_URL}/events`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

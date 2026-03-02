@@ -60,16 +60,7 @@ const ReviewHistory = () => {
         setDeleting(id);
         try {
             // Assuming there's a delete endpoint
-            const response = await fetch(`http://localhost:3001/api/reviews/${id}`, {
-                method: "DELETE",
-                headers: {
-                    "Authorization": `Bearer ${localStorage.getItem("authToken")}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error("Failed to delete review");
-            }
+            await reviewsApi.delete(id);
 
             setReviews(reviews.filter(r => r._id !== id));
             toast({

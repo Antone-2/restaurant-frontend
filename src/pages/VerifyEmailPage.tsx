@@ -4,6 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import env from '@/lib/env';
+
+const API_BASE_URL = `${env.VITE_API_URL}/api`;
 
 export function VerifyEmailPage() {
     const [searchParams] = useSearchParams();
@@ -21,7 +24,7 @@ export function VerifyEmailPage() {
                     return;
                 }
 
-                const response = await fetch(`http://localhost:3000/api/auth/verify-email/${token}`);
+                const response = await fetch(`${API_BASE_URL}/auth/verify-email/${token}`);
                 const data = await response.json();
 
                 if (!response.ok) {
@@ -84,13 +87,13 @@ export function VerifyEmailPage() {
                                 <AlertDescription>{message}</AlertDescription>
                             </Alert>
                             <div className="space-y-2">
-                                <Button 
+                                <Button
                                     onClick={() => navigate('/login')}
                                     className="w-full"
                                 >
                                     Go to Login
                                 </Button>
-                                <Button 
+                                <Button
                                     onClick={() => navigate('/register')}
                                     variant="outline"
                                     className="w-full"

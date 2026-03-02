@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, Gift, Share2, TrendingUp, Zap } from "lucide-react";
+import env from '@/lib/env';
+
+const API_BASE_URL = `${env.VITE_API_URL}/api`;
 
 interface LoyaltyData {
     points: number;
@@ -46,7 +49,7 @@ const LoyaltyDashboard = () => {
     const fetchLoyaltyData = async () => {
         setLoading(true);
         try {
-            const response = await fetch("http://localhost:3001/api/loyalty/points", {
+            const response = await fetch("${API_BASE_URL}/api/loyalty/points", {
                 method: "GET",
                 headers: {
                     "Authorization": `Bearer ${localStorage.getItem("authToken")}`
@@ -66,7 +69,7 @@ const LoyaltyDashboard = () => {
 
     const fetchReferralStats = async () => {
         try {
-            const response = await fetch("http://localhost:3001/api/loyalty/referral-stats", {
+            const response = await fetch("${API_BASE_URL}/api/loyalty/referral-stats", {
                 method: "GET",
                 headers: {
                     "Authorization": `Bearer ${localStorage.getItem("authToken")}`
@@ -96,7 +99,7 @@ const LoyaltyDashboard = () => {
 
         setConverting(true);
         try {
-            const response = await fetch("http://localhost:3001/api/loyalty/convert-to-discount", {
+            const response = await fetch("${API_BASE_URL}/api/loyalty/convert-to-discount", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -130,7 +133,7 @@ const LoyaltyDashboard = () => {
 
     const handleGenerateReferral = async () => {
         try {
-            const response = await fetch("http://localhost:3001/api/loyalty/generate-referral", {
+            const response = await fetch("${API_BASE_URL}/api/loyalty/generate-referral", {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${localStorage.getItem("authToken")}`

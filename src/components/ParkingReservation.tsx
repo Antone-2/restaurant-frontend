@@ -4,6 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Car, Check, Clock, Calendar, User, Phone, Mail, MapPin } from "lucide-react";
+import env from '@/lib/env';
+
+const API_BASE_URL = `${env.VITE_API_URL}/api`;
 import { useToast } from "@/components/ui/use-toast";
 
 const vehicleTypes = [
@@ -55,7 +58,7 @@ const ParkingReservation = () => {
         };
 
         try {
-            const res = await fetch('http://localhost:3001/api/parking', {
+            const res = await fetch('${API_BASE_URL}/api/parking', {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data)

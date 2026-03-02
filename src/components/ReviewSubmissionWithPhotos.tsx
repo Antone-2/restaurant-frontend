@@ -5,6 +5,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Image, Share2, Facebook, MessageCircle, Mail, Copy, Heart, MessageSquare, Eye } from 'lucide-react';
+import env from '@/lib/env';
+
+const API_BASE_URL = `${env.VITE_API_URL}/api`;
 
 interface ReviewWithPhotos {
     _id: string;
@@ -84,7 +87,7 @@ const ReviewSubmissionWithPhotos = ({ orderId, onSuccess }: { orderId: string; o
                 formData.append('photos', photo);
             });
 
-            const response = await fetch('http://localhost:3001/api/reviews/submit', {
+            const response = await fetch('${API_BASE_URL}/api/reviews/submit', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -318,8 +321,8 @@ export const ReviewsWithPhotos = ({ orderId }: { orderId?: string }) => {
     const fetchReviews = async () => {
         try {
             const url = orderId
-                ? `http://localhost:3001/api/reviews?orderId=${orderId}`
-                : 'http://localhost:3001/api/reviews';
+                ? `${API_BASE_URL}/api/reviews?orderId=${orderId}`
+                : '${API_BASE_URL}/api/reviews';
 
             const response = await fetch(url);
             if (response.ok) {
