@@ -55,7 +55,7 @@ const ContactPage = () => {
                   <Phone className="text-primary" size={20} /> <span className="font-semibold">0113 857846</span>
                 </a>
                 <div className="flex items-center gap-3 text-card-foreground">
-                  <MapPin className="text-primary" size={20} /> <span>B1, C4XP+MH Korinda</span>
+                  <MapPin className="text-primary" size={20} /> <span>Nambale, Kisumu - Busia Rd, Busia</span>
                 </div>
                 <div className="flex items-center gap-3 text-card-foreground">
                   <Clock className="text-primary" size={20} /> <span>Open 24 Hours — Every Day</span>
@@ -66,7 +66,7 @@ const ContactPage = () => {
             <div className="rounded-lg overflow-hidden border border-primary/10 h-80">
               <iframe
                 title="The Quill Restaurant Location"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d510.8547224932006!2d34.1111!3d0.5636!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x7d1d3a7ed0c9b80!2sKorinda%2C%20Busia%2C%20Kenya!5e0!3m2!1sen!2ske!4v1708960000000!5m2!1sen!2ske"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d510.8547224932006!2d34.1069!3d0.0618!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2sC4XP%2BVH%20Busia!5e0!3m2!1sen!2ske!4v1708960000000!5m2!1sen!2ske"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}

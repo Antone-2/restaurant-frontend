@@ -87,7 +87,7 @@ const ReviewSubmissionWithPhotos = ({ orderId, onSuccess }: { orderId: string; o
                 formData.append('photos', photo);
             });
 
-            const response = await fetch('${API_BASE_URL}/api/reviews/submit', {
+            const response = await fetch(`${API_BASE_URL}/api/reviews/submit`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -322,7 +322,7 @@ export const ReviewsWithPhotos = ({ orderId }: { orderId?: string }) => {
         try {
             const url = orderId
                 ? `${API_BASE_URL}/api/reviews?orderId=${orderId}`
-                : '${API_BASE_URL}/api/reviews';
+                : `${API_BASE_URL}/api/reviews`;
 
             const response = await fetch(url);
             if (response.ok) {

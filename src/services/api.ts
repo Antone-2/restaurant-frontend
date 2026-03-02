@@ -820,6 +820,122 @@ export const adminApi = {
             body: JSON.stringify({ phoneNumber, amount, orderId, reason })
         });
         return handleResponse<any>(response);
+    },
+
+    // Inventory Management
+    getInventory: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/inventory`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    createInventoryItem: async (item: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/inventory`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(item)
+        });
+        return handleResponse<any>(response);
+    },
+
+    updateInventoryItem: async (id: string, item: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/inventory/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(true),
+            body: JSON.stringify(item)
+        });
+        return handleResponse<any>(response);
+    },
+
+    deleteInventoryItem: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/inventory/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(true)
+        });
+        return handleResponse<void>(response);
+    },
+
+    getInventoryAlerts: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/inventory/alerts`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    // Staff Management
+    getStaff: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/staff`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    createStaff: async (staff: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/staff`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(staff)
+        });
+        return handleResponse<any>(response);
+    },
+
+    updateStaff: async (id: string, staff: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/staff/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(true),
+            body: JSON.stringify(staff)
+        });
+        return handleResponse<any>(response);
+    },
+
+    deleteStaff: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/staff/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(true)
+        });
+        return handleResponse<void>(response);
+    },
+
+    // Tables Management
+    getTables: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/tables`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    createTable: async (table: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/tables`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(table)
+        });
+        return handleResponse<any>(response);
+    },
+
+    updateTable: async (id: string, table: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/tables/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(true),
+            body: JSON.stringify(table)
+        });
+        return handleResponse<any>(response);
+    },
+
+    deleteTable: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/tables/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(true)
+        });
+        return handleResponse<void>(response);
+    },
+
+    getTableStats: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/tables/stats`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
     }
 };
 

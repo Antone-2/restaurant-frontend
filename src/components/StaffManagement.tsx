@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { adminApi } from '@/services/api';
 import {
     Dialog,
     DialogContent,
@@ -60,24 +61,8 @@ export default function StaffManagement() {
     const fetchStaff = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.warn('No authentication token');
-                setStaff([]);
-                setLoading(false);
-                return;
-            }
-            const response = await fetch('/api/admin/staff', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!response.ok) {
-                console.error('Failed to fetch staff:', response.status);
-                setStaff([]);
-                setLoading(false);
-                return;
-            }
-            const data = await response.json();
-            setStaff(data.staff || []);
+            const data = await adminApi.getStaff();
+            setStaff(data?.staff || data || []);
         } catch (error) {
             console.error('Error fetching staff:', error);
             setStaff([]);
@@ -97,16 +82,7 @@ export default function StaffManagement() {
         }
 
         try {
-            const response = await fetch('/api/admin/staff', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
-                body: JSON.stringify(formData),
-            });
-
-            if (!response.ok) throw new Error('Failed to add staff');
+            await adminApi.createStaff(formData);
 
             toast({
                 title: 'Success',
@@ -137,10 +113,7 @@ export default function StaffManagement() {
         if (!window.confirm('Are you sure you want to delete this staff member?')) return;
 
         try {
-            await fetch(`/api/admin/staff/${staffId}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-            });
+            await adminApi.deleteStaff(staffId);
 
             toast({
                 title: 'Success',

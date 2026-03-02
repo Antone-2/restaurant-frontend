@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { adminApi } from '@/services/api';
 import {
     Dialog,
     DialogContent,
@@ -81,24 +82,8 @@ export default function InventoryDashboard() {
     const fetchInventory = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.warn('No authentication token found');
-                setInventory([]);
-                setLoading(false);
-                return;
-            }
-            const response = await fetch('/api/admin/inventory', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!response.ok) {
-                console.error('Failed to fetch inventory:', response.status, response.statusText);
-                setInventory([]);
-                setLoading(false);
-                return;
-            }
-            const data = await response.json();
-            setInventory(data.inventory || []);
+            const data = await adminApi.getInventory();
+            setInventory(data?.inventory || data || []);
         } catch (error) {
             console.error('Error fetching inventory:', error);
             setInventory([]);
@@ -109,19 +94,7 @@ export default function InventoryDashboard() {
 
     const fetchAlerts = async () => {
         try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.warn('No authentication token found');
-                return;
-            }
-            const response = await fetch('/api/admin/inventory/alerts', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!response.ok) {
-                console.error('Failed to fetch alerts:', response.status);
-                return;
-            }
-            const data = await response.json();
+            const data = await adminApi.getInventoryAlerts();
             setAlerts(data);
         } catch (error) {
             console.error('Failed to fetch alerts:', error);
@@ -139,21 +112,7 @@ export default function InventoryDashboard() {
         }
 
         try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                toast({ title: 'Error', description: 'Please log in', variant: 'destructive' });
-                return;
-            }
-            const response = await fetch('/api/admin/inventory', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(formData),
-            });
-
-            if (!response.ok) throw new Error('Failed to add item');
+            await adminApi.createInventoryItem(formData);
 
             toast({
                 title: 'Success',
@@ -185,15 +144,7 @@ export default function InventoryDashboard() {
         if (!window.confirm('Delete this inventory item?')) return;
 
         try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                toast({ title: 'Error', description: 'Please log in', variant: 'destructive' });
-                return;
-            }
-            await fetch(`/api/admin/inventory/${itemId}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            await adminApi.deleteInventoryItem(itemId);
 
             toast({ title: 'Success', description: 'Item deleted' });
             fetchInventory();

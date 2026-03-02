@@ -135,7 +135,7 @@ export function DeliveryTracking({ orderId }: { orderId: string }) {
         setLoading(true);
 
         try {
-            const response = await fetch(`http://${API_BASE_URL}/api/orders/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/orders/${id}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('authToken')}`

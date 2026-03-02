@@ -91,7 +91,7 @@ const AnalyticsDashboard = () => {
     const fetchAnalytics = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/api/admin/analytics?range=${dateRange}`, {
+            const response = await fetch(`${API_BASE_URL}/admin/analytics?range=${dateRange}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('authToken')}`

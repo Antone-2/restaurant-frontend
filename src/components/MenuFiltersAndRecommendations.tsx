@@ -53,8 +53,8 @@ const MenuFiltersAndRecommendations = () => {
         setLoading(true);
         try {
             const [menuRes, recRes] = await Promise.all([
-                fetch('${API_BASE_URL}/api/menu'),
-                fetch('${API_BASE_URL}/api/menu/recommendations', {
+                fetch(`${API_BASE_URL}/api/menu`),
+                fetch(`${API_BASE_URL}/api/menu/recommendations`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('authToken')}`
                     }

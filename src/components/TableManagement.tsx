@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { adminApi, reservationsApi } from "@/services/api";
 import {
     Table as TableIcon,
     Users,
@@ -16,7 +17,6 @@ import {
     RefreshCw
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { reservationsApi } from "@/services/api";
 
 const SECTIONS = [
     { id: "window", name: "Window", color: "bg-blue-100" },
@@ -74,34 +74,9 @@ const TableManagement = () => {
         setLoading(true);
         setError(null);
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-            // Use demo data if not logged in
-            console.log('No token, using demo tables');
-            setTables(DEMO_TABLES as Table[]);
-            setLoading(false);
-            return;
-        }
-
         try {
-            const response = await fetch('/api/admin/tables', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    // Token invalid, use demo data
-                    console.log('Token invalid, using demo tables');
-                    setTables(DEMO_TABLES as Table[]);
-                    return;
-                }
-                throw new Error('Failed to fetch tables');
-            }
-
-            const data = await response.json();
-            setTables(data.tables || []);
+            const data = await adminApi.getTables();
+            setTables(data?.tables || data || []);
         } catch (err) {
             console.error('Error loading tables:', err);
             // Use demo data on error

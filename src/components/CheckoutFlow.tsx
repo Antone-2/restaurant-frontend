@@ -87,7 +87,7 @@ const CheckoutFlow = ({ isOpen, onClose }: CheckoutFlowProps) => {
             };
 
             try {
-                const response = await fetch("${API_BASE_URL}/api/orders", {
+                const response = await fetch(`${API_BASE_URL}/orders`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(orderData),
