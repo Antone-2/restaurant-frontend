@@ -1,0 +1,47 @@
+# Dependencies
+node_modules
+
+# Git
+.git
+.gitignore
+
+# Logs
+logs
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Test files
+coverage
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+test-*
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Source files (only needed for build)
+src
+public/sw.js
+
+# Build outputs
+dist
+
+# Documentation
+README.md
+docs
+
+# Temporary files
+tmp
+temp
