@@ -16,13 +16,11 @@ function getEnvConfig(): EnvConfig {
     if (isProduction && (!import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL === '')) {
         console.warn('Warning: VITE_API_URL not set for production. Using localhost as fallback.');
     }
-
-    // Return config with defaults for development
     return {
-        VITE_API_URL: import.meta.env.VITE_API_URL || 'http://localhost:3001',
-        VITE_WS_URL: import.meta.env.VITE_WS_URL || 'http://localhost:3001',
-        VITE_APP_NAME: import.meta.env.VITE_APP_NAME || 'The Quill',
-        VITE_ENABLE_ANALYTICS: import.meta.env.VITE_ENABLE_ANALYTICS || 'false'
+        VITE_API_URL: import.meta.env.VITE_API_URL,
+        VITE_WS_URL: import.meta.env.VITE_WS_URL,
+        VITE_APP_NAME: import.meta.env.VITE_APP_NAME,
+        VITE_ENABLE_ANALYTICS: import.meta.env.VITE_ENABLE_ANALYTICS
     } as EnvConfig;
 }
 
