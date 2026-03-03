@@ -1,6 +1,6 @@
 import env from '../lib/env';
 
-const API_BASE_URL = `${env.VITE_API_URL}/api`;
+const API_BASE_URL = env.VITE_API_URL.endsWith('/api') ? env.VITE_API_URL : `${env.VITE_API_URL}/api`;
 
 // Simple in-memory cache with TTL support
 interface CacheEntry<T> {

@@ -34,12 +34,13 @@ const env = getEnvConfig();
 // Example: import { API_URL } from '@/lib/env';
 // Then: fetch(`${API_URL}/api/...`)
 export const API_URL = env.VITE_API_URL;
-export const WS_URL = env.VITE_WS_URL;
+export const WS_URL = env.VITE_WS_URL || (env.VITE_API_URL ? env.VITE_API_URL.replace(/^http/, 'wss') : 'wss://localhost:3001');
 export const APP_NAME = env.VITE_APP_NAME;
 export const ENABLE_ANALYTICS = env.VITE_ENABLE_ANALYTICS === 'true';
 
 // For convenience, also export API_BASE_URL with /api suffix
-export const API_BASE_URL = `${API_URL}/api`;
+// Only add /api if it's not already present in the API_URL
+export const API_BASE_URL = API_URL.endsWith('/api') ? API_URL : `${API_URL}/api`;
 
 // Export the full config object
 export { env };
