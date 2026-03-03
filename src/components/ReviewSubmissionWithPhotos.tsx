@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -51,7 +51,7 @@ const ReviewSubmissionWithPhotos = ({ orderId, onSuccess }: { orderId: string; o
 
         files.forEach(file => {
             const reader = new FileReader();
-            reader.onload = (event) => {
+            reader.onload = (event: ProgressEvent<FileReader>) => {
                 setPhotoPreview(prev => [...prev, event.target?.result as string]);
             };
             reader.readAsDataURL(file);
@@ -59,11 +59,11 @@ const ReviewSubmissionWithPhotos = ({ orderId, onSuccess }: { orderId: string; o
     };
 
     const removePhoto = (index: number) => {
-        setPhotos(prev => prev.filter((_, i) => i !== index));
-        setPhotoPreview(prev => prev.filter((_, i) => i !== index));
+        setPhotos((prev: File[]) => prev.filter((_: File, i: number) => i !== index));
+        setPhotoPreview((prev: string[]) => prev.filter((_: string, i: number) => i !== index));
     };
 
-    const submitReview = async (e: React.FormEvent) => {
+    const submitReview = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         if (rating < 1 || !title.trim() || !review.trim()) {
@@ -83,7 +83,7 @@ const ReviewSubmissionWithPhotos = ({ orderId, onSuccess }: { orderId: string; o
             formData.append('title', title);
             formData.append('content', review);
 
-            photos.forEach(photo => {
+            photos.forEach((photo: File) => {
                 formData.append('photos', photo);
             });
 
@@ -229,7 +229,7 @@ const ReviewSubmissionWithPhotos = ({ orderId, onSuccess }: { orderId: string; o
                         {/* Photo Preview */}
                         {photoPreview.length > 0 && (
                             <div className="grid grid-cols-3 gap-2 mt-3">
-                                {photoPreview.map((preview, idx) => (
+                                {photoPreview.map((preview: string, idx: number) => (
                                     <div key={idx} className="relative group">
                                         <img src={preview} alt={`preview-${idx}`} className="w-full h-24 object-cover rounded-lg" />
                                         <button
@@ -336,7 +336,7 @@ export const ReviewsWithPhotos = ({ orderId }: { orderId?: string }) => {
         }
     };
 
-    useState(() => {
+    useEffect(() => {
         fetchReviews();
     });
 
@@ -344,7 +344,7 @@ export const ReviewsWithPhotos = ({ orderId }: { orderId?: string }) => {
 
     return (
         <div className="space-y-4">
-            {reviews.map(review => (
+            {reviews.map((review: ReviewWithPhotos) => (
                 <Card key={review._id}>
                     <CardContent className="pt-6">
                         <div className="flex justify-between items-start mb-3">
@@ -368,7 +368,7 @@ export const ReviewsWithPhotos = ({ orderId }: { orderId?: string }) => {
                         {/* Photos */}
                         {review.photos.length > 0 && (
                             <div className="grid grid-cols-3 gap-2 mb-3">
-                                {review.photos.map((photo, idx) => (
+                                {review.photos.map((photo: string, idx: number) => (
                                     <img key={idx} src={photo} alt={`review-photo-${idx}`} className="w-full h-24 object-cover rounded" />
                                 ))}
                             </div>
