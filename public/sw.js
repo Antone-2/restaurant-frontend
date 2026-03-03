@@ -134,15 +134,22 @@ async function networkFirstStrategy(request) {
 async function staleWhileRevalidate(request) {
     const cachedResponse = await caches.match(request);
 
+    // Always fetch fresh data in the background
     const fetchPromise = fetch(request).then((networkResponse) => {
         if (networkResponse.ok) {
+            // Clone the response before caching, as response body can only be read once
+            const responseToCache = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, networkResponse.clone());
+                cache.put(request, responseToCache);
             });
         }
         return networkResponse;
-    }).catch(() => cachedResponse);
+    }).catch(() => {
+        // If network fails and we have a cached response, return it
+        return cachedResponse || new Response('Offline', { status: 503 });
+    });
 
+    // Return cached immediately if available, otherwise wait for network
     return cachedResponse || fetchPromise;
 }
 
