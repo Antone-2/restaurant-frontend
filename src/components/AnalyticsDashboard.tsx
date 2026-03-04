@@ -91,21 +91,35 @@ const AnalyticsDashboard = () => {
     const fetchAnalytics = async () => {
         setLoading(true);
         try {
+            const token = localStorage.getItem('authToken');
+            console.log('Fetching analytics with token:', token ? 'token exists' : 'no token');
+
             const response = await fetch(`${API_BASE_URL}/admin/analytics?range=${dateRange}`, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 }
             });
 
+            console.log('Analytics response status:', response.status);
+
             if (!response.ok) {
-                throw new Error('Failed to fetch analytics');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `Failed to fetch analytics: ${response.status}`);
             }
 
             const data = await response.json();
-            setAnalytics(data.analytics);
+            console.log('Analytics data received:', data);
+
+            if (data.analytics) {
+                setAnalytics(data.analytics);
+            } else {
+                console.warn('No analytics data in response, using demo data');
+                setAnalytics(demoAnalytics);
+            }
         } catch (err: any) {
-            console.log('Using demo analytics data');
+            console.error('Analytics fetch error:', err.message);
             setAnalytics(demoAnalytics);
         } finally {
             setLoading(false);
@@ -171,7 +185,7 @@ const AnalyticsDashboard = () => {
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-bold">
-                            KES {analytics.dailyRevenue.reduce((sum, d) => sum + d.revenue, 0).toLocaleString()}
+                            KES {analytics.dailyRevenue ? analytics.dailyRevenue.reduce((sum, d) => sum + d.revenue, 0).toLocaleString() : '0'}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                             +12.5% from previous period
@@ -189,7 +203,7 @@ const AnalyticsDashboard = () => {
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-bold">
-                            {analytics.dailyRevenue.reduce((sum, d) => sum + d.orders, 0).toLocaleString()}
+                            {analytics.dailyRevenue ? analytics.dailyRevenue.reduce((sum, d) => sum + d.orders, 0).toLocaleString() : '0'}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                             +8.2% from previous period
@@ -223,10 +237,10 @@ const AnalyticsDashboard = () => {
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-bold">
-                            KES {Math.round(
+                            KES {analytics.dailyRevenue && analytics.dailyRevenue.length > 0 ? Math.round(
                                 analytics.dailyRevenue.reduce((sum, d) => sum + d.revenue, 0) /
                                 analytics.dailyRevenue.reduce((sum, d) => sum + d.orders, 0)
-                            ).toLocaleString()}
+                            ).toLocaleString() : '0'}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                             per order
@@ -388,7 +402,7 @@ const AnalyticsDashboard = () => {
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">Success Rate</p>
-                            <p className="text-2xl font-bold">{(analytics.deliveryMetrics.successRate * 100).toFixed(1)}%</p>
+                            <p className="text-2xl font-bold">{analytics.deliveryMetrics.successRate != null ? (analytics.deliveryMetrics.successRate * 100).toFixed(1) : '0'}%</p>
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">Active Partners</p>
@@ -420,11 +434,10 @@ const AnalyticsDashboard = () => {
                         <div>
                             <p className="text-sm text-muted-foreground">Retention Rate</p>
                             <p className="text-xl font-bold">
-                                {(
+                                {analytics.customerMetrics.activeMonthly > 0 ? (
                                     ((analytics.customerMetrics.activeMonthly - analytics.customerMetrics.newThisMonth) /
-                                        (analytics.customerMetrics.activeMonthly || 1)) *
-                                    100
-                                ).toFixed(1)}%
+                                        analytics.customerMetrics.activeMonthly) * 100
+                                ).toFixed(1) : '0'}%
                             </p>
                         </div>
                     </div>
