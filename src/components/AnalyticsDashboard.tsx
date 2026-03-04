@@ -103,7 +103,8 @@ const AnalyticsDashboard = () => {
             }
 
             const data = await response.json();
-            setAnalytics(data.analytics);
+            // Backend returns data directly, not wrapped in analytics property
+            setAnalytics(data);
         } catch (err: any) {
             console.log('Using demo analytics data');
             setAnalytics(demoAnalytics);
