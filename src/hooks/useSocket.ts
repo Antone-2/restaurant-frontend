@@ -32,6 +32,8 @@ export const useSocket = (options: UseSocketOptions = {}) => {
                 reconnection: true,
                 reconnectionAttempts: 5,
                 reconnectionDelay: 1000,
+                reconnectionDelayMax: 5000,
+                timeout: 20000, // 20 second connection timeout
             });
 
             socketRef.current.on('connect', () => {
@@ -59,8 +61,12 @@ export const useSocket = (options: UseSocketOptions = {}) => {
             });
 
             socketRef.current.on('connect_error', (error: any) => {
-                console.error('Socket connection error:', error);
+                console.error('Socket connection error:', error.message);
                 setIsConnected(false);
+            });
+
+            socketRef.current.on('error', (error: any) => {
+                console.error('Socket error:', error);
             });
 
             // Listen for various events
