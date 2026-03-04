@@ -84,10 +84,6 @@ const AnalyticsDashboard = () => {
         ],
     };
 
-    // Safe access to analytics with fallbacks
-    const safeAnalytics = analytics || demoAnalytics;
-    const safeCustomerMetrics = safeAnalytics.customerMetrics || demoAnalytics.customerMetrics;
-
     useEffect(() => {
         fetchAnalytics();
     }, [dateRange]);
@@ -107,8 +103,7 @@ const AnalyticsDashboard = () => {
             }
 
             const data = await response.json();
-            // Backend returns data directly, not wrapped in analytics property
-            setAnalytics(data);
+            setAnalytics(data.analytics);
         } catch (err: any) {
             console.log('Using demo analytics data');
             setAnalytics(demoAnalytics);
@@ -176,7 +171,7 @@ const AnalyticsDashboard = () => {
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-bold">
-                            KES {(safeAnalytics.dailyRevenue || []).reduce((sum, d) => sum + d.revenue, 0).toLocaleString()}
+                            KES {analytics.dailyRevenue.reduce((sum, d) => sum + d.revenue, 0).toLocaleString()}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                             +12.5% from previous period
@@ -194,7 +189,7 @@ const AnalyticsDashboard = () => {
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-bold">
-                            {(safeAnalytics.dailyRevenue || []).reduce((sum, d) => sum + d.orders, 0).toLocaleString()}
+                            {analytics.dailyRevenue.reduce((sum, d) => sum + d.orders, 0).toLocaleString()}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                             +8.2% from previous period
@@ -211,9 +206,9 @@ const AnalyticsDashboard = () => {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-2xl font-bold">{safeCustomerMetrics.activeMonthly.toLocaleString()}</p>
+                        <p className="text-2xl font-bold">{analytics.customerMetrics.activeMonthly.toLocaleString()}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                            {safeCustomerMetrics.newThisMonth} new this month
+                            {analytics.customerMetrics.newThisMonth} new this month
                         </p>
                     </CardContent>
                 </Card>
@@ -229,8 +224,8 @@ const AnalyticsDashboard = () => {
                     <CardContent>
                         <p className="text-2xl font-bold">
                             KES {Math.round(
-                                (safeAnalytics.dailyRevenue || []).reduce((sum, d) => sum + d.revenue, 0) /
-                                (safeAnalytics.dailyRevenue || []).reduce((sum, d) => sum + d.orders, 0)
+                                analytics.dailyRevenue.reduce((sum, d) => sum + d.revenue, 0) /
+                                analytics.dailyRevenue.reduce((sum, d) => sum + d.orders, 0)
                             ).toLocaleString()}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -257,7 +252,7 @@ const AnalyticsDashboard = () => {
                         </CardHeader>
                         <CardContent>
                             <ResponsiveContainer width="100%" height={300}>
-                                <LineChart data={safeAnalytics.dailyRevenue || []}>
+                                <LineChart data={analytics.dailyRevenue}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="date" />
                                     <YAxis yAxisId="left" />
@@ -294,7 +289,7 @@ const AnalyticsDashboard = () => {
                         </CardHeader>
                         <CardContent>
                             <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={safeAnalytics.topItems.slice(0, 10)}>
+                                <BarChart data={analytics.topItems.slice(0, 10)}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
                                     <YAxis />
@@ -317,7 +312,7 @@ const AnalyticsDashboard = () => {
                                 <ResponsiveContainer width="100%" height={300}>
                                     <PieChart>
                                         <Pie
-                                            data={safeAnalytics.revenueByType}
+                                            data={analytics.revenueByType}
                                             cx="50%"
                                             cy="50%"
                                             labelLine={false}
@@ -326,7 +321,7 @@ const AnalyticsDashboard = () => {
                                             fill="#8884d8"
                                             dataKey="value"
                                         >
-                                            {safeAnalytics.revenueByType.map((_, index) => (
+                                            {analytics.revenueByType.map((_, index) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                             ))}
                                         </Pie>
@@ -346,7 +341,7 @@ const AnalyticsDashboard = () => {
                         </CardHeader>
                         <CardContent>
                             <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={safeAnalytics.peakHours}>
+                                <BarChart data={analytics.peakHours}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="hour" />
                                     <YAxis />
@@ -368,7 +363,7 @@ const AnalyticsDashboard = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-3">
-                            {safeAnalytics.paymentMethods.map((method) => (
+                            {analytics.paymentMethods.map((method) => (
                                 <div key={method.method} className="flex items-center justify-between pb-3 border-b last:border-0">
                                     <span className="font-medium">{method.method}</span>
                                     <div className="text-right">
@@ -389,15 +384,15 @@ const AnalyticsDashboard = () => {
                     <CardContent className="space-y-4">
                         <div>
                             <p className="text-sm text-muted-foreground">Average Delivery Time</p>
-                            <p className="text-2xl font-bold">{safeAnalytics.deliveryMetrics.averageTime} mins</p>
+                            <p className="text-2xl font-bold">{analytics.deliveryMetrics.averageTime} mins</p>
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">Success Rate</p>
-                            <p className="text-2xl font-bold">{(safeAnalytics.deliveryMetrics.successRate * 100).toFixed(1)}%</p>
+                            <p className="text-2xl font-bold">{(analytics.deliveryMetrics.successRate * 100).toFixed(1)}%</p>
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">Active Partners</p>
-                            <p className="text-2xl font-bold">{safeAnalytics.deliveryMetrics.partnerCount}</p>
+                            <p className="text-2xl font-bold">{analytics.deliveryMetrics.partnerCount}</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -412,22 +407,22 @@ const AnalyticsDashboard = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
                             <p className="text-sm text-muted-foreground">Total Customers</p>
-                            <p className="text-xl font-bold">{safeCustomerMetrics.totalCustomers.toLocaleString()}</p>
+                            <p className="text-xl font-bold">{analytics.customerMetrics.totalCustomers.toLocaleString()}</p>
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">Monthly Active</p>
-                            <p className="text-xl font-bold">{safeCustomerMetrics.activeMonthly.toLocaleString()}</p>
+                            <p className="text-xl font-bold">{analytics.customerMetrics.activeMonthly.toLocaleString()}</p>
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">New This Month</p>
-                            <p className="text-xl font-bold">{safeCustomerMetrics.newThisMonth.toLocaleString()}</p>
+                            <p className="text-xl font-bold">{analytics.customerMetrics.newThisMonth.toLocaleString()}</p>
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">Retention Rate</p>
                             <p className="text-xl font-bold">
                                 {(
-                                    ((safeCustomerMetrics.activeMonthly - safeCustomerMetrics.newThisMonth) /
-                                        (safeCustomerMetrics.activeMonthly || 1)) *
+                                    ((analytics.customerMetrics.activeMonthly - analytics.customerMetrics.newThisMonth) /
+                                        (analytics.customerMetrics.activeMonthly || 1)) *
                                     100
                                 ).toFixed(1)}%
                             </p>
