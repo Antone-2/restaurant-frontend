@@ -61,7 +61,7 @@ const UserProfile = () => {
     const fetchPaymentMethods = async () => {
         setLoadingPayments(true);
         try {
-            const response = await fetch("${API_BASE_URL}/api/auth/payment-methods", {
+            const response = await fetch("${API_BASE_URL}/auth/payment-methods", {
                 method: "GET",
                 headers: {
                     "Authorization": `Bearer ${localStorage.getItem("authToken")}`
@@ -102,7 +102,7 @@ const UserProfile = () => {
                     mobileNumber: paymentForm.mobileNumber
                 };
 
-            const response = await fetch("${API_BASE_URL}/api/auth/payment-methods", {
+            const response = await fetch("${API_BASE_URL}/auth/payment-methods", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -147,7 +147,7 @@ const UserProfile = () => {
 
         setLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/payment-methods/${methodId}`, {
+            const response = await fetch(`${API_BASE_URL}/auth/payment-methods/${methodId}`, {
                 method: "DELETE",
                 headers: {
                     "Authorization": `Bearer ${localStorage.getItem("authToken")}`
@@ -178,7 +178,7 @@ const UserProfile = () => {
     const handleSetDefaultPayment = async (methodId: string) => {
         setLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/payment-methods/${methodId}`, {
+            const response = await fetch(`${API_BASE_URL}/auth/payment-methods/${methodId}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -211,7 +211,7 @@ const UserProfile = () => {
     const handleDownloadData = async () => {
         setLoading(true);
         try {
-            const response = await fetch("${API_BASE_URL}/api/auth/download-data", {
+            const response = await fetch("${API_BASE_URL}/auth/download-data", {
                 method: "GET",
                 headers: {
                     "Authorization": `Bearer ${localStorage.getItem("authToken")}`
@@ -260,7 +260,7 @@ const UserProfile = () => {
 
         setDeletingAccount(true);
         try {
-            const response = await fetch("${API_BASE_URL}/api/auth/account", {
+            const response = await fetch("${API_BASE_URL}/auth/account", {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
@@ -337,7 +337,7 @@ const UserProfile = () => {
         setLoading(true);
         try {
             // Assuming there's a password change endpoint
-            const response = await fetch("${API_BASE_URL}/api/auth/change-password", {
+            const response = await fetch("${API_BASE_URL}/auth/change-password", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
