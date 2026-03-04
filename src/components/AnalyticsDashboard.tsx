@@ -172,7 +172,7 @@ const AnalyticsDashboard = () => {
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-bold">
-                            KES {analytics.dailyRevenue.reduce((sum, d) => sum + d.revenue, 0).toLocaleString()}
+                            KES {(analytics.dailyRevenue || []).reduce((sum, d) => sum + d.revenue, 0).toLocaleString()}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                             +12.5% from previous period
@@ -190,7 +190,7 @@ const AnalyticsDashboard = () => {
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-bold">
-                            {analytics.dailyRevenue.reduce((sum, d) => sum + d.orders, 0).toLocaleString()}
+                            {(analytics.dailyRevenue || []).reduce((sum, d) => sum + d.orders, 0).toLocaleString()}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                             +8.2% from previous period
@@ -225,8 +225,8 @@ const AnalyticsDashboard = () => {
                     <CardContent>
                         <p className="text-2xl font-bold">
                             KES {Math.round(
-                                analytics.dailyRevenue.reduce((sum, d) => sum + d.revenue, 0) /
-                                analytics.dailyRevenue.reduce((sum, d) => sum + d.orders, 0)
+                                (analytics.dailyRevenue || []).reduce((sum, d) => sum + d.revenue, 0) /
+                                (analytics.dailyRevenue || []).reduce((sum, d) => sum + d.orders, 0)
                             ).toLocaleString()}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
@@ -253,7 +253,7 @@ const AnalyticsDashboard = () => {
                         </CardHeader>
                         <CardContent>
                             <ResponsiveContainer width="100%" height={300}>
-                                <LineChart data={analytics.dailyRevenue}>
+                                <LineChart data={analytics.dailyRevenue || []}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="date" />
                                     <YAxis yAxisId="left" />
