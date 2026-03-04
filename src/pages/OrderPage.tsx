@@ -28,6 +28,8 @@ const OrderPage = () => {
       items: (type === 'Delivery' || type === 'Takeaway Order' || type === 'takeaway' || type === 'delivery')
         ? [{ name: formData.get('items') as string, quantity: 1, price: 0 }]
         : [],
+      total: 0, // Will be calculated by backend
+      subtotal: 0,
       notes: type === 'Delivery' || type === 'delivery'
         ? formData.get('instructions') as string
         : formData.get('pickupTime') as string,
