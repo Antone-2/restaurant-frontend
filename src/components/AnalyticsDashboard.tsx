@@ -86,6 +86,7 @@ const AnalyticsDashboard = () => {
 
     // Safe access to analytics with fallbacks
     const safeAnalytics = analytics || demoAnalytics;
+    const safeCustomerMetrics = safeAnalytics.customerMetrics || demoAnalytics.customerMetrics;
 
     useEffect(() => {
         fetchAnalytics();
@@ -210,9 +211,9 @@ const AnalyticsDashboard = () => {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-2xl font-bold">{safeAnalytics.customerMetrics.activeMonthly.toLocaleString()}</p>
+                        <p className="text-2xl font-bold">{safeCustomerMetrics.activeMonthly.toLocaleString()}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                            {safeAnalytics.customerMetrics.newThisMonth} new this month
+                            {safeCustomerMetrics.newThisMonth} new this month
                         </p>
                     </CardContent>
                 </Card>
@@ -411,22 +412,22 @@ const AnalyticsDashboard = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
                             <p className="text-sm text-muted-foreground">Total Customers</p>
-                            <p className="text-xl font-bold">{safeAnalytics.customerMetrics.totalCustomers.toLocaleString()}</p>
+                            <p className="text-xl font-bold">{safeCustomerMetrics.totalCustomers.toLocaleString()}</p>
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">Monthly Active</p>
-                            <p className="text-xl font-bold">{safeAnalytics.customerMetrics.activeMonthly.toLocaleString()}</p>
+                            <p className="text-xl font-bold">{safeCustomerMetrics.activeMonthly.toLocaleString()}</p>
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">New This Month</p>
-                            <p className="text-xl font-bold">{safeAnalytics.customerMetrics.newThisMonth.toLocaleString()}</p>
+                            <p className="text-xl font-bold">{safeCustomerMetrics.newThisMonth.toLocaleString()}</p>
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">Retention Rate</p>
                             <p className="text-xl font-bold">
                                 {(
-                                    ((safeAnalytics.customerMetrics.activeMonthly - safeAnalytics.customerMetrics.newThisMonth) /
-                                        (safeAnalytics.customerMetrics.activeMonthly || 1)) *
+                                    ((safeCustomerMetrics.activeMonthly - safeCustomerMetrics.newThisMonth) /
+                                        (safeCustomerMetrics.activeMonthly || 1)) *
                                     100
                                 ).toFixed(1)}%
                             </p>
