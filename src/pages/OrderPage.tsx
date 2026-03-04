@@ -23,6 +23,7 @@ const OrderPage = () => {
     const orderData = {
       orderType: type.toLowerCase(),
       customerName: formData.get('name') as string,
+      email: formData.get('email') as string,
       phone: formData.get('phone') as string,
       items: type === 'Delivery' || type === 'Takeaway Order'
         ? [{ name: formData.get('items') as string, quantity: 1, price: 0 }]
@@ -86,6 +87,7 @@ const OrderPage = () => {
                 <h2 className="font-display text-xl font-bold text-card-foreground mb-4">Takeaway Order</h2>
                 <form onSubmit={handleSubmit("Takeaway Order")} className="space-y-4">
                   <Input name="name" placeholder="Full name" required className="bg-background" />
+                  <Input name="email" type="email" placeholder="Email Address" required className="bg-background" />
                   <Input name="phone" type="tel" placeholder="Phone Number" required className="bg-background" />
                   <Textarea name="items" placeholder="List your order items (e.g., 2x Grilled Chicken, 1x Mango Juice)" required className="bg-background" rows={4} />
                   <Input name="pickupTime" type="time" placeholder="Preferred pickup time" required className="bg-background" />
@@ -112,6 +114,7 @@ const OrderPage = () => {
                 </div>
                 <form onSubmit={handleSubmit("Delivery")} className="space-y-4">
                   <Input name="name" placeholder="Full name" required className="bg-background" />
+                  <Input name="email" type="email" placeholder="Email Address" required className="bg-background" />
                   <Input name="phone" type="tel" placeholder="Phone Number" required className="bg-background" />
                   <Input name="address" placeholder="Delivery address" required className="bg-background" />
                   <Textarea name="items" placeholder="List your order items" required className="bg-background" rows={4} />
