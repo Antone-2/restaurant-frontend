@@ -25,13 +25,13 @@ const OrderPage = () => {
       customerName: formData.get('name') as string,
       email: formData.get('email') as string,
       phone: formData.get('phone') as string,
-      items: type === 'Delivery' || type === 'Takeaway Order'
+      items: (type === 'Delivery' || type === 'Takeaway Order' || type === 'takeaway' || type === 'delivery')
         ? [{ name: formData.get('items') as string, quantity: 1, price: 0 }]
         : [],
-      notes: type === 'Delivery'
+      notes: type === 'Delivery' || type === 'delivery'
         ? formData.get('instructions') as string
         : formData.get('pickupTime') as string,
-      address: type === 'Delivery' ? formData.get('address') as string : '',
+      address: type === 'Delivery' || type === 'delivery' ? formData.get('address') as string : '',
     };
 
     ordersApi.create(orderData)
