@@ -116,6 +116,37 @@ export const useSocket = (options: UseSocketOptions = {}) => {
                 setLastEvent({ type: 'review:updated', data });
             });
 
+            // Admin-specific notification listeners
+            socketRef.current.on('complaint:new', (data: any) => {
+                setLastEvent({ type: 'complaint:new', data });
+                setNotifications((prev) => [...prev, { type: 'complaint:new', data }].slice(-20));
+            });
+
+            socketRef.current.on('dispute:new', (data: any) => {
+                setLastEvent({ type: 'dispute:new', data });
+                setNotifications((prev) => [...prev, { type: 'dispute:new', data }].slice(-20));
+            });
+
+            socketRef.current.on('parking:new', (data: any) => {
+                setLastEvent({ type: 'parking:new', data });
+                setNotifications((prev) => [...prev, { type: 'parking:new', data }].slice(-20));
+            });
+
+            socketRef.current.on('contact:new', (data: any) => {
+                setLastEvent({ type: 'contact:new', data });
+                setNotifications((prev) => [...prev, { type: 'contact:new', data }].slice(-20));
+            });
+
+            socketRef.current.on('event:new', (data: any) => {
+                setLastEvent({ type: 'event:new', data });
+                setNotifications((prev) => [...prev, { type: 'event:new', data }].slice(-20));
+            });
+
+            socketRef.current.on('inventory:low', (data: any) => {
+                setLastEvent({ type: 'inventory:low', data });
+                setNotifications((prev) => [...prev, { type: 'inventory:low', data }].slice(-20));
+            });
+
             socketRef.current.on('notification:push', (data: any) => {
                 setLastEvent({ type: 'notification:push', data });
                 setNotifications((prev) => [...prev, { type: 'notification:push', data }].slice(-20));

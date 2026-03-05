@@ -17,7 +17,7 @@ import {
     Menu, ShoppingBag, CalendarDays,
     Building2, Users, DollarSign, Car, Megaphone, PartyPopper,
     ChefHat, Package, BarChart3, LogOut, Plus, Trash2, Edit,
-    RefreshCw, Bell, ChevronLeft, ChevronRight
+    RefreshCw, Bell, ChevronLeft, ChevronRight, Star, AlertCircle
 } from 'lucide-react';
 
 // Import new components
@@ -388,6 +388,8 @@ export function AdminDashboard() {
     const [revenuePeriod, setRevenuePeriod] = useState('monthly');
     const [dateRange] = useState({ startDate: '', endDate: '' });
     const [notifications, setNotifications] = useState<any[]>([]);
+    const [complaints, setComplaints] = useState<any[]>([]);
+    const [disputes, setDisputes] = useState<any[]>([]);
 
     // Modals
     const [menuFormOpen, setMenuFormOpen] = useState(false);
@@ -446,6 +448,8 @@ export function AdminDashboard() {
             loadAnalytics();
         } else if (activeTab === 'revenue') {
             loadRevenue();
+        } else if (activeTab === 'notifications') {
+            loadNotifications();
         }
     }, [activeTab, orderStatusFilter, reservationDateFilter, reservationStatusFilter, revenuePeriod]);
 
@@ -523,6 +527,100 @@ export function AdminDashboard() {
             setRevenue(data);
         } catch (err: any) {
             console.error('Failed to load revenue:', err);
+        }
+    };
+
+    const loadNotifications = async () => {
+        try {
+            // Fetch recent orders (last 10)
+            const ordersData = await adminApi.getAllOrders({ limit: 10 });
+
+            // Fetch recent reservations (last 10)
+            const reservationsData = await reservationsApi.getAll();
+
+            // Fetch recent reviews
+            const reviewsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/admin/reviews?status=all`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            const reviewsData = reviewsResponse.ok ? await reviewsResponse.json() : [];
+
+            // Fetch complaints
+            const complaintsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/admin/complaints?status=all`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            const complaintsData = complaintsResponse.ok ? await complaintsResponse.json() : [];
+
+            // Fetch disputes
+            const disputesResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/admin/disputes?status=all`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            const disputesData = disputesResponse.ok ? await disputesResponse.json() : [];
+
+            // Build notifications array from all data sources
+            const allNotifications: any[] = [];
+
+            // Add orders as notifications
+            (ordersData || []).slice(0, 10).forEach((order: any) => {
+                allNotifications.push({
+                    id: `order-${order._id}`,
+                    type: 'order:new',
+                    data: order,
+                    timestamp: order.createdAt,
+                    read: false
+                });
+            });
+
+            // Add reservations as notifications
+            (reservationsData || []).slice(0, 10).forEach((res: any) => {
+                allNotifications.push({
+                    id: `reservation-${res._id}`,
+                    type: 'reservation:new',
+                    data: res,
+                    timestamp: res.createdAt,
+                    read: false
+                });
+            });
+
+            // Add reviews as notifications
+            (reviewsData || []).slice(0, 10).forEach((review: any) => {
+                allNotifications.push({
+                    id: `review-${review._id}`,
+                    type: 'review:new',
+                    data: review,
+                    timestamp: review.createdAt,
+                    read: false
+                });
+            });
+
+            // Add complaints as notifications
+            (complaintsData || []).slice(0, 10).forEach((complaint: any) => {
+                allNotifications.push({
+                    id: `complaint-${complaint._id}`,
+                    type: 'complaint:new',
+                    data: complaint,
+                    timestamp: complaint.createdAt,
+                    read: false
+                });
+            });
+
+            // Add disputes as notifications
+            (disputesData || []).slice(0, 10).forEach((dispute: any) => {
+                allNotifications.push({
+                    id: `dispute-${dispute._id}`,
+                    type: 'dispute:new',
+                    data: dispute,
+                    timestamp: dispute.createdAt,
+                    read: false
+                });
+            });
+
+            // Sort by timestamp descending (newest first)
+            allNotifications.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+            // Take only the most recent 50
+            setNotifications(allNotifications.slice(0, 50));
+        } catch (err: any) {
+            console.error('Failed to load notifications:', err);
         }
     };
 
