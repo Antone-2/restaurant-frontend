@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,15 +14,33 @@ import {
     Users,
     Send,
     Plus,
-    TrendingUp,
     DollarSign,
     Clock,
-    Filter
+    Trash2,
+    Edit,
+    Play,
+    UsersRound
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { adminApi } from "@/services/api";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 interface Campaign {
     id: string;
+    _id?: string;
     name: string;
     type: "email" | "sms" | "push" | "promotion";
     status: "draft" | "scheduled" | "active" | "completed";
@@ -32,76 +50,164 @@ interface Campaign {
     clickRate?: number;
     startDate: string;
     endDate?: string;
+    scheduledDate?: string;
     discount?: string;
     code?: string;
+    subject?: string;
+    message?: string;
+    segment?: string;
 }
 
-const DEMO_CAMPAIGNS: Campaign[] = [
-    {
-        id: "c1",
-        name: "Weekend Brunch Special",
-        type: "email",
-        status: "completed",
-        audience: "All Customers",
-        sentCount: 1250,
-        openRate: 32.5,
-        clickRate: 8.2,
-        startDate: "2026-02-15",
-        endDate: "2026-02-16"
-    },
-    {
-        id: "c2",
-        name: "Happy Hour - 50% Off Drinks",
-        type: "promotion",
-        status: "active",
-        audience: "Loyalty Members",
-        sentCount: 450,
-        openRate: 45.8,
-        clickRate: 22.1,
-        startDate: "2026-02-20",
-        endDate: "2026-03-01",
-        discount: "50%",
-        code: "HAPPY50"
-    },
-    {
-        id: "c3",
-        name: "New Menu Launch",
-        type: "push",
-        status: "scheduled",
-        audience: "App Users",
-        sentCount: 0,
-        startDate: "2026-03-05"
-    },
-    {
-        id: "c4",
-        name: "Valentine's Day Dinner",
-        type: "sms",
-        status: "active",
-        audience: "VIP Customers",
-        sentCount: 180,
-        openRate: 98.2,
-        clickRate: 15.5,
-        startDate: "2026-02-10",
-        endDate: "2026-02-14",
-        discount: "20%",
-        code: "VALENTINE20"
-    },
-    {
-        id: "c5",
-        name: "Birthday Rewards",
-        type: "email",
-        status: "draft",
-        audience: "Birthday This Month",
-        sentCount: 0,
-        startDate: "2026-03-01"
-    },
-];
+interface Subscriber {
+    _id: string;
+    email: string;
+    segment: string;
+    createdAt: string;
+}
 
 const MarketingPromotions = () => {
     const { toast } = useToast();
-    const [campaigns, setCampaigns] = useState<Campaign[]>(DEMO_CAMPAIGNS);
+    const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+    const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
     const [selectedType, setSelectedType] = useState<string>("all");
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showSubscribersModal, setShowSubscribersModal] = useState(false);
+    const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    // Form state
+    const [formData, setFormData] = useState({
+        name: "",
+        type: "email" as "email" | "sms" | "push" | "promotion",
+        segment: "all",
+        subject: "",
+        message: "",
+        discount: "",
+        code: "",
+        startDate: "",
+        endDate: "",
+        scheduledDate: ""
+    });
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const [campaignsData, subscribersData] = await Promise.all([
+                adminApi.getCampaigns(),
+                adminApi.getSubscribers()
+            ]);
+
+            const campaignsList = campaignsData?.campaigns || campaignsData || [];
+            setCampaigns(campaignsList.map((c: any) => ({
+                ...c,
+                id: c._id || c.id,
+                startDate: c.startDate ? new Date(c.startDate).toISOString().split('T')[0] : '',
+                endDate: c.endDate ? new Date(c.endDate).toISOString().split('T')[0] : '',
+                scheduledDate: c.scheduledDate ? new Date(c.scheduledDate).toISOString().split('T')[0] : ''
+            })));
+
+            setSubscribers(subscribersData?.subscribers || []);
+        } catch (err) {
+            console.error('Error loading marketing data:', err);
+            // Use demo data on error
+            setCampaigns(DEMO_CAMPAIGNS.map(c => ({ ...c, _id: c.id, id: c.id })));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        try {
+            const campaignData = {
+                name: formData.name,
+                type: formData.type,
+                segment: formData.segment,
+                subject: formData.subject,
+                message: formData.message,
+                discount: formData.discount || undefined,
+                code: formData.code || undefined,
+                startDate: formData.startDate ? new Date(formData.startDate).toISOString() : undefined,
+                endDate: formData.endDate ? new Date(formData.endDate).toISOString() : undefined,
+                scheduledDate: formData.scheduledDate ? new Date(formData.scheduledDate).toISOString() : undefined,
+                status: formData.scheduledDate ? 'scheduled' : 'draft'
+            };
+
+            if (editingCampaign) {
+                await adminApi.updateCampaign(editingCampaign.id, campaignData);
+                toast({ title: "Campaign updated successfully" });
+            } else {
+                await adminApi.createCampaign(campaignData);
+                toast({ title: "Campaign created successfully" });
+            }
+
+            setShowCreateModal(false);
+            setEditingCampaign(null);
+            resetForm();
+            loadData();
+        } catch (err: any) {
+            toast({ title: "Error", description: err.message || "Failed to save campaign", variant: "destructive" });
+        }
+    };
+
+    const handleSendCampaign = async (campaignId: string) => {
+        try {
+            const result = await adminApi.sendCampaign(campaignId);
+            toast({ title: `Campaign sent to ${result.recipients} recipients` });
+            loadData();
+        } catch (err: any) {
+            toast({ title: "Error", description: err.message || "Failed to send campaign", variant: "destructive" });
+        }
+    };
+
+    const handleDeleteCampaign = async (campaignId: string) => {
+        if (!confirm("Are you sure you want to delete this campaign?")) return;
+
+        try {
+            await adminApi.deleteCampaign(campaignId);
+            toast({ title: "Campaign deleted" });
+            loadData();
+        } catch (err: any) {
+            toast({ title: "Error", description: err.message || "Failed to delete campaign", variant: "destructive" });
+        }
+    };
+
+    const handleEditCampaign = (campaign: Campaign) => {
+        setEditingCampaign(campaign);
+        setFormData({
+            name: campaign.name,
+            type: campaign.type,
+            segment: campaign.segment || "all",
+            subject: campaign.subject || "",
+            message: campaign.message || "",
+            discount: campaign.discount || "",
+            code: campaign.code || "",
+            startDate: campaign.startDate,
+            endDate: campaign.endDate || "",
+            scheduledDate: campaign.scheduledDate || ""
+        });
+        setShowCreateModal(true);
+    };
+
+    const resetForm = () => {
+        setFormData({
+            name: "",
+            type: "email",
+            segment: "all",
+            subject: "",
+            message: "",
+            discount: "",
+            code: "",
+            startDate: "",
+            endDate: "",
+            scheduledDate: ""
+        });
+    };
 
     const getTypeIcon = (type: string) => {
         switch (type) {
@@ -127,7 +233,7 @@ const MarketingPromotions = () => {
         switch (status) {
             case "draft": return <Badge variant="outline">Draft</Badge>;
             case "scheduled": return <Badge className="bg-yellow-500"><Clock className="w-3 h-3 mr-1" /> Scheduled</Badge>;
-            case "active": return <Badge className="bg-green-500">Active</Badge>;
+            case "active": return <Badge className="bg-green-500"><Play className="w-3 h-3 mr-1" /> Active</Badge>;
             case "completed": return <Badge className="bg-gray-500">Completed</Badge>;
             default: return <Badge>{status}</Badge>;
         }
@@ -139,10 +245,18 @@ const MarketingPromotions = () => {
 
     const stats = {
         totalCampaigns: campaigns.length,
-        activeCampaigns: campaigns.filter(c => c.status === "active").length,
-        totalRecipients: campaigns.reduce((sum, c) => sum + c.sentCount, 0),
+        activeCampaigns: campaigns.filter(c => c.status === "active" || c.status === "scheduled").length,
+        totalRecipients: campaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0),
         avgOpenRate: campaigns.filter(c => c.openRate).reduce((sum, c, _, arr) => sum + (c.openRate || 0) / arr.length, 0).toFixed(1),
     };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -152,10 +266,16 @@ const MarketingPromotions = () => {
                     <Megaphone className="w-6 h-6" />
                     <h2 className="text-xl font-bold">Marketing & Promotions</h2>
                 </div>
-                <Button onClick={() => setShowCreateModal(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Campaign
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setShowSubscribersModal(true)}>
+                        <UsersRound className="w-4 h-4 mr-2" />
+                        Subscribers ({subscribers.length})
+                    </Button>
+                    <Button onClick={() => { resetForm(); setEditingCampaign(null); setShowCreateModal(true); }}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        New Campaign
+                    </Button>
+                </div>
             </div>
 
             {/* Stats */}
@@ -169,7 +289,7 @@ const MarketingPromotions = () => {
                 <Card className="border-green-500">
                     <CardContent className="pt-4">
                         <div className="text-2xl font-bold text-green-600">{stats.activeCampaigns}</div>
-                        <p className="text-sm text-muted-foreground">Active Now</p>
+                        <p className="text-sm text-muted-foreground">Active/Scheduled</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -188,28 +308,60 @@ const MarketingPromotions = () => {
 
             {/* Quick Actions */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="cursor-pointer hover:shadow-lg transition-all">
+                <Card
+                    className="cursor-pointer hover:shadow-lg transition-all"
+                    onClick={() => {
+                        resetForm();
+                        setFormData(f => ({ ...f, type: 'email', segment: 'all', name: 'Email Campaign to All Customers' }));
+                        setEditingCampaign(null);
+                        setShowCreateModal(true);
+                    }}
+                >
                     <CardContent className="pt-4 text-center">
                         <Mail className="w-8 h-8 mx-auto mb-2 text-blue-500" />
                         <p className="font-medium">Email Campaign</p>
                         <p className="text-xs text-muted-foreground">Send to all customers</p>
                     </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:shadow-lg transition-all">
+                <Card
+                    className="cursor-pointer hover:shadow-lg transition-all"
+                    onClick={() => {
+                        resetForm();
+                        setFormData(f => ({ ...f, type: 'sms', segment: 'all', name: 'SMS Blast to All Customers' }));
+                        setEditingCampaign(null);
+                        setShowCreateModal(true);
+                    }}
+                >
                     <CardContent className="pt-4 text-center">
                         <MessageSquare className="w-8 h-8 mx-auto mb-2 text-green-500" />
                         <p className="font-medium">SMS Blast</p>
                         <p className="text-xs text-muted-foreground">Quick text message</p>
                     </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:shadow-lg transition-all">
+                <Card
+                    className="cursor-pointer hover:shadow-lg transition-all"
+                    onClick={() => {
+                        resetForm();
+                        setFormData(f => ({ ...f, type: 'promotion', segment: 'all', name: 'New Promotion' }));
+                        setEditingCampaign(null);
+                        setShowCreateModal(true);
+                    }}
+                >
                     <CardContent className="pt-4 text-center">
                         <Tag className="w-8 h-8 mx-auto mb-2 text-orange-500" />
                         <p className="font-medium">Create Promo</p>
                         <p className="text-xs text-muted-foreground">Discount or coupon</p>
                     </CardContent>
                 </Card>
-                <Card className="cursor-pointer hover:shadow-lg transition-all">
+                <Card
+                    className="cursor-pointer hover:shadow-lg transition-all"
+                    onClick={() => {
+                        resetForm();
+                        setFormData(f => ({ ...f, type: 'push', segment: 'all', name: 'Push Notification to App Users' }));
+                        setEditingCampaign(null);
+                        setShowCreateModal(true);
+                    }}
+                >
                     <CardContent className="pt-4 text-center">
                         <Bell className="w-8 h-8 mx-auto mb-2 text-purple-500" />
                         <p className="font-medium">Push Notification</p>
@@ -219,7 +371,7 @@ const MarketingPromotions = () => {
             </div>
 
             {/* Filters */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
                 {["all", "email", "sms", "push", "promotion"].map(type => (
                     <Button
                         key={type}
@@ -240,7 +392,7 @@ const MarketingPromotions = () => {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        {filteredCampaigns.map(campaign => (
+                        {filteredCampaigns.length > 0 ? filteredCampaigns.map(campaign => (
                             <div
                                 key={campaign.id}
                                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50"
@@ -258,11 +410,11 @@ const MarketingPromotions = () => {
                                         <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                                             <span className="flex items-center gap-1">
                                                 <Users className="w-3 h-3" />
-                                                {campaign.audience}
+                                                {campaign.segment || campaign.audience || 'All'}
                                             </span>
                                             <span className="flex items-center gap-1">
                                                 <Calendar className="w-3 h-3" />
-                                                {campaign.startDate}
+                                                {campaign.startDate || campaign.scheduledDate || 'Not scheduled'}
                                                 {campaign.endDate && ` - ${campaign.endDate}`}
                                             </span>
                                             {campaign.code && (
@@ -279,40 +431,365 @@ const MarketingPromotions = () => {
                                     </div>
                                 </div>
 
-                                {campaign.sentCount > 0 && (
-                                    <div className="flex items-center gap-6">
-                                        <div className="text-center">
-                                            <p className="text-lg font-bold">{campaign.sentCount.toLocaleString()}</p>
-                                            <p className="text-xs text-muted-foreground">Sent</p>
+                                <div className="flex items-center gap-2">
+                                    {campaign.sentCount > 0 && (
+                                        <div className="flex items-center gap-4 mr-4">
+                                            <div className="text-center">
+                                                <p className="text-lg font-bold">{campaign.sentCount.toLocaleString()}</p>
+                                                <p className="text-xs text-muted-foreground">Sent</p>
+                                            </div>
+                                            {campaign.openRate && (
+                                                <>
+                                                    <div className="text-center">
+                                                        <p className="text-lg font-bold">{campaign.openRate}%</p>
+                                                        <p className="text-xs text-muted-foreground">Open Rate</p>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-lg font-bold">{campaign.clickRate}%</p>
+                                                        <p className="text-xs text-muted-foreground">Click Rate</p>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
-                                        {campaign.openRate && (
-                                            <>
-                                                <div className="text-center">
-                                                    <p className="text-lg font-bold">{campaign.openRate}%</p>
-                                                    <p className="text-xs text-muted-foreground">Open Rate</p>
-                                                </div>
-                                                <div className="text-center">
-                                                    <p className="text-lg font-bold">{campaign.clickRate}%</p>
-                                                    <p className="text-xs text-muted-foreground">Click Rate</p>
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                )}
+                                    )}
+
+                                    {campaign.status === 'draft' && (
+                                        <Button
+                                            size="sm"
+                                            className="bg-green-600 hover:bg-green-700"
+                                            onClick={() => handleSendCampaign(campaign.id)}
+                                        >
+                                            <Send className="w-3 h-3 mr-1" />
+                                            Send
+                                        </Button>
+                                    )}
+
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleEditCampaign(campaign)}
+                                    >
+                                        <Edit className="w-3 h-3" />
+                                    </Button>
+
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-red-500 hover:text-red-600"
+                                        onClick={() => handleDeleteCampaign(campaign.id)}
+                                    >
+                                        <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                </div>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="text-center py-8 text-muted-foreground">
+                                <Megaphone className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                                <p>No campaigns found</p>
+                                <Button
+                                    variant="outline"
+                                    className="mt-4"
+                                    onClick={() => { resetForm(); setEditingCampaign(null); setShowCreateModal(true); }}
+                                >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Create First Campaign
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>
 
-            {filteredCampaigns.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                    <Megaphone className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No campaigns found</p>
-                </div>
-            )}
+            {/* Create/Edit Campaign Modal */}
+            <Dialog open={showCreateModal} onOpenChange={(open) => {
+                setShowCreateModal(open);
+                if (!open) {
+                    setEditingCampaign(null);
+                    resetForm();
+                }
+            }}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {editingCampaign ? 'Edit Campaign' : 'Create New Campaign'}
+                        </DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit}>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-sm font-medium">Campaign Name</label>
+                                    <Input
+                                        value={formData.name}
+                                        onChange={(e) => setFormData(f => ({ ...f, name: e.target.value }))}
+                                        placeholder="e.g., Weekend Special"
+                                        required
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium">Campaign Type</label>
+                                    <Select
+                                        value={formData.type}
+                                        onValueChange={(value: any) => setFormData(f => ({ ...f, type: value }))}
+                                    >
+                                        <SelectTrigger className="mt-1">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="email">Email</SelectItem>
+                                            <SelectItem value="sms">SMS</SelectItem>
+                                            <SelectItem value="push">Push Notification</SelectItem>
+                                            <SelectItem value="promotion">Promotion</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-sm font-medium">Audience Segment</label>
+                                    <Select
+                                        value={formData.segment}
+                                        onValueChange={(value) => setFormData(f => ({ ...f, segment: value }))}
+                                    >
+                                        <SelectTrigger className="mt-1">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Customers</SelectItem>
+                                            <SelectItem value="vip">VIP Customers</SelectItem>
+                                            <SelectItem value="loyalty">Loyalty Members</SelectItem>
+                                            <SelectItem value="new">New Customers</SelectItem>
+                                            <SelectItem value="inactive">Inactive Customers</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium">Schedule Date (Optional)</label>
+                                    <Input
+                                        type="date"
+                                        value={formData.scheduledDate}
+                                        onChange={(e) => setFormData(f => ({ ...f, scheduledDate: e.target.value }))}
+                                        className="mt-1"
+                                    />
+                                </div>
+                            </div>
+
+                            {(formData.type === 'email' || formData.type === 'push') && (
+                                <div>
+                                    <label className="text-sm font-medium">Subject Line</label>
+                                    <Input
+                                        value={formData.subject}
+                                        onChange={(e) => setFormData(f => ({ ...f, subject: e.target.value }))}
+                                        placeholder="e.g., Special Offer Just for You!"
+                                        className="mt-1"
+                                    />
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="text-sm font-medium">Message</label>
+                                <Textarea
+                                    value={formData.message}
+                                    onChange={(e) => setFormData(f => ({ ...f, message: e.target.value }))}
+                                    placeholder="Write your campaign message here..."
+                                    rows={4}
+                                    className="mt-1"
+                                />
+                            </div>
+
+                            {formData.type === 'promotion' && (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-sm font-medium">Discount</label>
+                                        <Input
+                                            value={formData.discount}
+                                            onChange={(e) => setFormData(f => ({ ...f, discount: e.target.value }))}
+                                            placeholder="e.g., 20%"
+                                            className="mt-1"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium">Coupon Code</label>
+                                        <Input
+                                            value={formData.code}
+                                            onChange={(e) => setFormData(f => ({ ...f, code: e.target.value.toUpperCase() }))}
+                                            placeholder="e.g., SUMMER20"
+                                            className="mt-1"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-sm font-medium">Start Date</label>
+                                    <Input
+                                        type="date"
+                                        value={formData.startDate}
+                                        onChange={(e) => setFormData(f => ({ ...f, startDate: e.target.value }))}
+                                        className="mt-1"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium">End Date</label>
+                                    <Input
+                                        type="date"
+                                        value={formData.endDate}
+                                        onChange={(e) => setFormData(f => ({ ...f, endDate: e.target.value }))}
+                                        className="mt-1"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <DialogFooter className="mt-6">
+                            <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>
+                                Cancel
+                            </Button>
+                            <Button type="submit">
+                                {editingCampaign ? 'Update Campaign' : 'Create Campaign'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Subscribers Modal */}
+            <Dialog open={showSubscribersModal} onOpenChange={setShowSubscribersModal}>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Email Subscribers</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-3 gap-4">
+                            <Card>
+                                <CardContent className="pt-4 text-center">
+                                    <div className="text-2xl font-bold">{subscribers.length}</div>
+                                    <p className="text-sm text-muted-foreground">Total</p>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent className="pt-4 text-center">
+                                    <div className="text-2xl font-bold text-green-600">
+                                        {subscribers.filter(s => s.segment !== 'inactive').length}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">Active</p>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent className="pt-4 text-center">
+                                    <div className="text-2xl font-bold text-blue-600">
+                                        {subscribers.filter(s => s.segment === 'vip').length}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">VIP</p>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <div className="border rounded-lg max-h-64 overflow-y-auto">
+                            {subscribers.length > 0 ? (
+                                <table className="w-full">
+                                    <thead className="bg-muted sticky top-0">
+                                        <tr>
+                                            <th className="text-left p-3 text-sm">Email</th>
+                                            <th className="text-left p-3 text-sm">Segment</th>
+                                            <th className="text-left p-3 text-sm">Joined</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {subscribers.map(sub => (
+                                            <tr key={sub._id} className="border-t">
+                                                <td className="p-3 text-sm">{sub.email}</td>
+                                                <td className="p-3 text-sm capitalize">{sub.segment}</td>
+                                                <td className="p-3 text-sm text-muted-foreground">
+                                                    {sub.createdAt ? new Date(sub.createdAt).toLocaleDateString() : 'N/A'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <div className="p-8 text-center text-muted-foreground">
+                                    <UsersRound className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                                    <p>No subscribers yet</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };
+
+// Demo campaigns as fallback
+const DEMO_CAMPAIGNS = [
+    {
+        id: "c1",
+        name: "Weekend Brunch Special",
+        type: "email" as const,
+        status: "completed" as const,
+        audience: "All Customers",
+        sentCount: 1250,
+        openRate: 32.5,
+        clickRate: 8.2,
+        startDate: "2026-02-15",
+        endDate: "2026-02-16",
+        segment: "all"
+    },
+    {
+        id: "c2",
+        name: "Happy Hour - 50% Off Drinks",
+        type: "promotion" as const,
+        status: "active" as const,
+        audience: "Loyalty Members",
+        sentCount: 450,
+        openRate: 45.8,
+        clickRate: 22.1,
+        startDate: "2026-02-20",
+        endDate: "2026-03-01",
+        discount: "50%",
+        code: "HAPPY50",
+        segment: "loyalty"
+    },
+    {
+        id: "c3",
+        name: "New Menu Launch",
+        type: "push" as const,
+        status: "scheduled" as const,
+        audience: "App Users",
+        sentCount: 0,
+        startDate: "",
+        scheduledDate: "2026-03-05",
+        segment: "all"
+    },
+    {
+        id: "c4",
+        name: "Valentine's Day Dinner",
+        type: "sms" as const,
+        status: "completed" as const,
+        audience: "VIP Customers",
+        sentCount: 180,
+        openRate: 98.2,
+        clickRate: 15.5,
+        startDate: "2026-02-10",
+        endDate: "2026-02-14",
+        discount: "20%",
+        code: "VALENTINE20",
+        segment: "vip"
+    },
+    {
+        id: "c5",
+        name: "Birthday Rewards",
+        type: "email" as const,
+        status: "draft" as const,
+        audience: "Birthday This Month",
+        sentCount: 0,
+        startDate: "2026-03-01",
+        segment: "new"
+    },
+];
 
 export default MarketingPromotions;

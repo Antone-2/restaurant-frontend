@@ -936,6 +936,73 @@ export const adminApi = {
             headers: getHeaders(true)
         });
         return handleResponse<any>(response);
+    },
+
+    // Campaign Management
+    getCampaigns: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/campaigns`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    createCampaign: async (campaign: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/campaigns`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(campaign)
+        });
+        return handleResponse<any>(response);
+    },
+
+    updateCampaign: async (id: string, campaign: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/campaigns/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(true),
+            body: JSON.stringify(campaign)
+        });
+        return handleResponse<any>(response);
+    },
+
+    deleteCampaign: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/campaigns/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(true)
+        });
+        return handleResponse<void>(response);
+    },
+
+    sendCampaign: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/campaigns/${id}/send`, {
+            method: 'POST',
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    // Subscribers Management
+    getSubscribers: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/subscribers`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    addSubscriber: async (subscriber: { email: string; segment?: string }) => {
+        const response = await fetch(`${API_BASE_URL}/admin/subscribers`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(subscriber)
+        });
+        return handleResponse<any>(response);
+    },
+
+    deleteSubscriber: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/subscribers/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(true)
+        });
+        return handleResponse<void>(response);
     }
 };
 
