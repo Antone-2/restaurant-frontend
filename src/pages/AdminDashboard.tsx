@@ -14,10 +14,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
-    Menu, X, Home, ShoppingCart, ShoppingBag, CalendarDays,
+    Menu, ShoppingBag, CalendarDays,
     Building2, Users, DollarSign, Car, Megaphone, PartyPopper,
     ChefHat, Package, BarChart3, LogOut, Plus, Trash2, Edit,
-    RefreshCw, Bell, Search, ChevronLeft, ChevronRight
+    RefreshCw, Bell, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 // Import new components
@@ -299,6 +299,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" /> },
+    { id: 'notifications', label: 'Notifications', icon: <Bell className="w-5 h-5" /> },
     { id: 'menu', label: 'Menu', icon: <ChefHat className="w-5 h-5" /> },
     { id: 'orders', label: 'Orders', icon: <ShoppingBag className="w-5 h-5" /> },
     { id: 'reservations', label: 'Reservations', icon: <CalendarDays className="w-5 h-5" /> },
@@ -324,8 +325,8 @@ function BottomNav({ activeTab, setActiveTab }: { activeTab: string; setActiveTa
                         key={item.id}
                         onClick={() => setActiveTab(item.id)}
                         className={`flex flex-col items-center justify-center p-2 min-w-[60px] rounded-lg transition-colors ${activeTab === item.id
-                                ? 'text-blue-600 bg-blue-50'
-                                : 'text-gray-500'
+                            ? 'text-blue-600 bg-blue-50'
+                            : 'text-gray-500'
                             }`}
                     >
                         <div className={activeTab === item.id ? 'text-blue-600' : 'text-gray-400'}>
@@ -348,8 +349,8 @@ function BottomNav({ activeTab, setActiveTab }: { activeTab: string; setActiveTa
                                     key={item.id}
                                     onClick={() => { setActiveTab(item.id); setIsOpen(false); }}
                                     className={`flex flex-col items-center justify-center p-3 rounded-lg transition-colors ${activeTab === item.id
-                                            ? 'bg-blue-100 text-blue-600'
-                                            : 'bg-gray-50 text-gray-600'
+                                        ? 'bg-blue-100 text-blue-600'
+                                        : 'bg-gray-50 text-gray-600'
                                         }`}
                                 >
                                     {item.icon}
@@ -385,7 +386,8 @@ export function AdminDashboard() {
     const [reservationDateFilter, setReservationDateFilter] = useState('');
     const [reservationStatusFilter, setReservationStatusFilter] = useState('all');
     const [revenuePeriod, setRevenuePeriod] = useState('monthly');
-    const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
+    const [dateRange] = useState({ startDate: '', endDate: '' });
+    const [notifications, setNotifications] = useState<any[]>([]);
 
     // Modals
     const [menuFormOpen, setMenuFormOpen] = useState(false);
@@ -422,6 +424,16 @@ export function AdminDashboard() {
             if (lastEvent.type === 'reservation:new' || lastEvent.type === 'reservation:updated' || lastEvent.type === 'reservation:statusChanged') {
                 loadReservations();
             }
+
+            // Add to notifications list
+            const newNotification = {
+                id: Date.now(),
+                type: lastEvent.type,
+                data: lastEvent.data,
+                timestamp: new Date().toISOString(),
+                read: false
+            };
+            setNotifications(prev => [newNotification, ...prev].slice(0, 50));
         }
     }, [lastEvent]);
 
@@ -435,7 +447,7 @@ export function AdminDashboard() {
         } else if (activeTab === 'revenue') {
             loadRevenue();
         }
-    }, [activeTab, orderStatusFilter, reservationDateFilter, reservationStatusFilter, revenuePeriod, dateRange]);
+    }, [activeTab, orderStatusFilter, reservationDateFilter, reservationStatusFilter, revenuePeriod]);
 
     const loadAllData = async () => {
         try {
@@ -635,6 +647,127 @@ export function AdminDashboard() {
         switch (activeTab) {
             case 'analytics':
                 return <AnalyticsDashboard />;
+            case 'notifications':
+                return (
+                    <Card className="border-0 shadow-lg">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <div>
+                                <CardTitle className="text-lg">Real-Time Notifications ({notifications.length})</CardTitle>
+                                <CardDescription>Live updates from customers and system</CardDescription>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => setNotifications([])}>
+                                Clear All
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            {notifications.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">
+                                    <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                                    <p>No notifications yet</p>
+                                    <p className="text-sm">New orders, reservations, and other updates will appear here</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+                                    {notifications.map((notification: any) => (
+                                        <div
+                                            key={notification.id}
+                                            className={`p-4 border rounded-lg bg-white ${!notification.read ? 'border-l-4 border-l-blue-500' : ''}`}
+                                        >
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    {notification.type.includes('order') && <ShoppingBag className="w-4 h-4 text-blue-500" />}
+                                                    {notification.type.includes('reservation') && <CalendarDays className="w-4 h-4 text-purple-500" />}
+                                                    {notification.type.includes('review') && <span className="text-yellow-500">★</span>}
+                                                    {notification.type.includes('parking') && <Car className="w-4 h-4 text-green-500" />}
+                                                    {notification.type.includes('contact') && <Bell className="w-4 h-4 text-orange-500" />}
+                                                    {notification.type.includes('event') && <PartyPopper className="w-4 h-4 text-pink-500" />}
+                                                    {notification.type.includes('complaint') && <Alert className="w-4 h-4 text-red-500" />}
+                                                    <Badge variant="outline" className="text-xs">
+                                                        {notification.type.replace(':', ' ')}
+                                                    </Badge>
+                                                </div>
+                                                <span className="text-xs text-gray-400">
+                                                    {new Date(notification.timestamp).toLocaleTimeString()}
+                                                </span>
+                                            </div>
+                                            <div className="text-sm">
+                                                {notification.type === 'order:new' && (
+                                                    <>
+                                                        <p className="font-medium">New Order Received</p>
+                                                        <p className="text-gray-500">
+                                                            {notification.data?.customerName} - KES {notification.data?.total?.toLocaleString()}
+                                                        </p>
+                                                    </>
+                                                )}
+                                                {notification.type === 'reservation:new' && (
+                                                    <>
+                                                        <p className="font-medium">New Reservation</p>
+                                                        <p className="text-gray-500">
+                                                            {notification.data?.name} - {notification.data?.guests} guests on {notification.data?.date}
+                                                        </p>
+                                                    </>
+                                                )}
+                                                {notification.type === 'review:new' && (
+                                                    <>
+                                                        <p className="font-medium">New Review</p>
+                                                        <p className="text-gray-500">
+                                                            {notification.data?.name} rated {notification.data?.rating} stars
+                                                        </p>
+                                                    </>
+                                                )}
+                                                {notification.type === 'parking:new' && (
+                                                    <>
+                                                        <p className="font-medium">New Parking Reservation</p>
+                                                        <p className="text-gray-500">
+                                                            {notification.data?.name} - Slot {notification.data?.slotNumber}
+                                                        </p>
+                                                    </>
+                                                )}
+                                                {notification.type === 'contact:new' && (
+                                                    <>
+                                                        <p className="font-medium">New Contact Message</p>
+                                                        <p className="text-gray-500">
+                                                            {notification.data?.name} - {notification.data?.email}
+                                                        </p>
+                                                    </>
+                                                )}
+                                                {notification.type === 'event:new' && (
+                                                    <>
+                                                        <p className="font-medium">New Event Inquiry</p>
+                                                        <p className="text-gray-500">
+                                                            {notification.data?.name} - {notification.data?.eventType} for {notification.data?.guests} guests
+                                                        </p>
+                                                    </>
+                                                )}
+                                                {notification.type === 'complaint:new' && (
+                                                    <>
+                                                        <p className="font-medium text-red-600">New Complaint</p>
+                                                        <p className="text-gray-500">
+                                                            {notification.data?.subject}
+                                                        </p>
+                                                    </>
+                                                )}
+                                                {notification.type.includes('order:updated') || notification.type.includes('order:statusChanged') ? (
+                                                    <>
+                                                        <p className="font-medium">Order Updated</p>
+                                                        <p className="text-gray-500">
+                                                            Order #{notification.data?.orderId} - Status: {notification.data?.status}
+                                                        </p>
+                                                    </>
+                                                ) : null}
+                                                {!['order:new', 'reservation:new', 'review:new', 'parking:new', 'contact:new', 'event:new', 'complaint:new', 'order:updated', 'order:statusChanged'].includes(notification.type) && (
+                                                    <p className="text-gray-500">
+                                                        {JSON.stringify(notification.data)}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                );
             case 'menu':
                 return (
                     <Card className="border-0 shadow-lg">
@@ -918,8 +1051,8 @@ export function AdminDashboard() {
                                                 key={item.id}
                                                 onClick={() => { setActiveTab(item.id); setSidebarOpen(true); }}
                                                 className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${activeTab === item.id
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'text-gray-300 hover:bg-slate-800'
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'text-gray-300 hover:bg-slate-800'
                                                     }`}
                                             >
                                                 {item.icon}
@@ -981,8 +1114,8 @@ export function AdminDashboard() {
                                     key={item.id}
                                     onClick={() => setActiveTab(item.id)}
                                     className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${activeTab === item.id
-                                            ? 'bg-blue-600 text-white'
-                                            : 'text-gray-300 hover:bg-slate-800'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'text-gray-300 hover:bg-slate-800'
                                         }`}
                                 >
                                     <div className={activeTab === item.id ? 'text-white' : 'text-gray-400'}>

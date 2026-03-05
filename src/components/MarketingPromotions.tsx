@@ -102,8 +102,9 @@ const MarketingPromotions = () => {
             ]);
 
             const campaignsList = campaignsData?.campaigns || campaignsData || [];
+            const subscribersList = subscribersData?.subscribers || [];
 
-            // Only set campaigns if we got actual data from the server
+            // Set campaigns if we got actual data from the server
             if (campaignsList.length > 0) {
                 setCampaigns(campaignsList.map((c: any) => ({
                     ...c,
@@ -112,15 +113,17 @@ const MarketingPromotions = () => {
                     endDate: c.endDate ? new Date(c.endDate).toISOString().split('T')[0] : '',
                     scheduledDate: c.scheduledDate ? new Date(c.scheduledDate).toISOString().split('T')[0] : ''
                 })));
+            } else {
+                // No campaigns from API, use demo data
+                setCampaigns(DEMO_CAMPAIGNS.map(c => ({ ...c, _id: c.id, id: c.id })));
             }
 
-            const subscribersList = subscribersData?.subscribers || [];
             if (subscribersList.length > 0) {
                 setSubscribers(subscribersList);
             }
         } catch (err: any) {
             console.error('Error loading marketing data:', err);
-            // Use demo data on error
+            // Always use demo data on error
             setCampaigns(DEMO_CAMPAIGNS.map(c => ({ ...c, _id: c.id, id: c.id })));
         } finally {
             setLoading(false);
