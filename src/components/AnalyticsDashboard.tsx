@@ -236,15 +236,21 @@ const AnalyticsDashboard = () => {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-2xl font-bold">
-                            KES {analytics.dailyRevenue && analytics.dailyRevenue.length > 0 ? Math.round(
-                                analytics.dailyRevenue.reduce((sum, d) => sum + d.revenue, 0) /
-                                analytics.dailyRevenue.reduce((sum, d) => sum + d.orders, 0)
-                            ).toLocaleString() : '0'}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            per order
-                        </p>
+                        {(() => {
+                            const totalRevenue = analytics.dailyRevenue ? analytics.dailyRevenue.reduce((sum, d) => sum + d.revenue, 0) : 0;
+                            const totalOrders = analytics.dailyRevenue ? analytics.dailyRevenue.reduce((sum, d) => sum + d.orders, 0) : 0;
+                            const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
+                            return (
+                                <>
+                                    <p className="text-2xl font-bold">
+                                        KES {avgOrderValue.toLocaleString()}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        per order
+                                    </p>
+                                </>
+                            );
+                        })()}
                     </CardContent>
                 </Card>
             </div>
