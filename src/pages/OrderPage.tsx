@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { DollarSign, Loader2 } from "lucide-react";
-import TableReservation from "@/components/TableReservation";
 import { ordersApi } from "@/services/api";
 
 const OrderPage = () => {
@@ -63,25 +62,14 @@ const OrderPage = () => {
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="text-center mb-10">
           <h1 className="font-display text-4xl font-bold text-foreground mb-2">Order Online</h1>
-          <p className="text-muted-foreground">Reserve, order takeaway, or request delivery</p>
+          <p className="text-muted-foreground">Order takeaway or request delivery</p>
         </div>
 
-        <Tabs defaultValue="dinein">
-          <TabsList className="w-full bg-muted grid grid-cols-3">
-            <TabsTrigger value="dinein" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Dine-in</TabsTrigger>
+        <Tabs defaultValue="takeaway">
+          <TabsList className="w-full bg-muted grid grid-cols-2">
             <TabsTrigger value="takeaway" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Takeaway</TabsTrigger>
             <TabsTrigger value="delivery" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Delivery</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="dinein">
-            <Card className="border-primary/20 bg-card mt-4">
-              <CardContent className="p-6">
-                <h2 className="font-display text-xl font-bold text-card-foreground mb-4">Table Reservation</h2>
-                <p className="text-muted-foreground mb-6">Book your table with our interactive reservation system</p>
-                <TableReservation />
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="takeaway">
             <Card className="border-primary/20 bg-card mt-4">

@@ -8,9 +8,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { User, Mail, Phone, MapPin, Lock, LogOut, ArrowLeft, CreditCard, Trash2, Check, Plus, Download } from "lucide-react";
-import env from '@/lib/env';
-
-const API_BASE_URL = `${env.VITE_API_URL}/api`;
+import { API_BASE_URL } from '@/lib/apiBaseUrl';
 
 const UserProfile = () => {
     const { user, logout, isAuthenticated, updateProfile } = useAuth();
@@ -438,7 +436,7 @@ const UserProfile = () => {
                                                     type="email"
                                                     value={form.email}
                                                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                                                    placeholder="your@email.com"
+                                                    placeholder="Email Address"
                                                 />
                                             </div>
                                         </div>

@@ -83,7 +83,13 @@ export default function InventoryDashboard() {
         try {
             setLoading(true);
             const data = await adminApi.getInventory();
-            setInventory(data?.inventory || data || []);
+            // Ensure we always set an array
+            const inventoryData = Array.isArray(data)
+                ? data
+                : Array.isArray(data?.inventory)
+                    ? data.inventory
+                    : [];
+            setInventory(inventoryData);
         } catch (error) {
             console.error('Error fetching inventory:', error);
             setInventory([]);
@@ -159,12 +165,14 @@ export default function InventoryDashboard() {
 
     const categories = ['all', 'Produce', 'Meat', 'Seafood', 'Oils & Condiments', 'Dairy'];
 
+    const inventoryArray = Array.isArray(inventory) ? inventory : [];
+
     const filteredInventory =
         filterCategory === 'all'
-            ? (inventory || [])
-            : (inventory || []).filter((item) => item.category === filterCategory);
+            ? inventoryArray
+            : inventoryArray.filter((item) => item.category === filterCategory);
 
-    const totalValue = (inventory || []).reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
+    const totalValue = inventoryArray.reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
 
     return (
         <div className="space-y-6">
@@ -361,7 +369,7 @@ export default function InventoryDashboard() {
                 <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-4">
                     <div className="text-sm text-gray-600 dark:text-gray-400">Total Items</div>
                     <div className="text-2xl font-bold mt-1 text-gray-900 dark:text-white">
-                        {inventory.length}
+                        {inventoryArray.length}
                     </div>
                 </div>
                 <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-4">
@@ -370,7 +378,7 @@ export default function InventoryDashboard() {
                         Low Stock Items
                     </div>
                     <div className="text-2xl font-bold mt-1 text-orange-600 dark:text-orange-400">
-                        {inventory.filter((i) => i.status === 'low-stock').length}
+                        {inventoryArray.filter((i) => i.status === 'low-stock').length}
                     </div>
                 </div>
                 <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-4">

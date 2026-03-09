@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
     Megaphone,
     Mail,
@@ -19,7 +20,8 @@ import {
     Trash2,
     Edit,
     Play,
-    UsersRound
+    UsersRound,
+    AlertTriangle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { adminApi } from "@/services/api";
@@ -74,6 +76,8 @@ const MarketingPromotions = () => {
     const [showSubscribersModal, setShowSubscribersModal] = useState(false);
     const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
     const [loading, setLoading] = useState(true);
+    const [emailConfigured, setEmailConfigured] = useState<boolean | null>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -96,6 +100,15 @@ const MarketingPromotions = () => {
     const loadData = async () => {
         setLoading(true);
         try {
+            // Check email configuration status
+            try {
+                const emailStatus = await adminApi.getEmailStatus();
+                setEmailConfigured(emailStatus.configured);
+            } catch (e) {
+                console.log('Email status check failed:', e);
+                setEmailConfigured(false);
+            }
+
             const [campaignsData, subscribersData] = await Promise.all([
                 adminApi.getCampaigns(),
                 adminApi.getSubscribers()
@@ -137,6 +150,7 @@ const MarketingPromotions = () => {
             const campaignData = {
                 name: formData.name,
                 type: formData.type,
+                audience: formData.segment,
                 segment: formData.segment,
                 subject: formData.subject,
                 message: formData.message,
@@ -193,10 +207,11 @@ const MarketingPromotions = () => {
     const handleSendCampaign = async (campaignId: string) => {
         try {
             const result = await adminApi.sendCampaign(campaignId);
-            toast({ title: `Campaign sent to ${result.recipients} recipients` });
+            toast({ title: `Campaign sent to ${result.sentCount || result.recipients || 0} recipients` });
             loadData();
         } catch (err: any) {
             // Demo mode - simulate sending
+            console.log('Campaign send unavailable, using demo mode');
             setCampaigns(prev => prev.map(c =>
                 c.id === campaignId
                     ? { ...c, status: 'completed' as const, sentCount: Math.floor(Math.random() * 500) + 100, openRate: Math.floor(Math.random() * 30) + 20 }
@@ -207,8 +222,6 @@ const MarketingPromotions = () => {
     };
 
     const handleDeleteCampaign = async (campaignId: string) => {
-        if (!confirm("Are you sure you want to delete this campaign?")) return;
-
         try {
             await adminApi.deleteCampaign(campaignId);
             toast({ title: "Campaign deleted" });
@@ -217,6 +230,91 @@ const MarketingPromotions = () => {
             // Demo mode - remove locally
             setCampaigns(prev => prev.filter(c => c.id !== campaignId));
             toast({ title: "Campaign deleted (demo mode)" });
+        }
+        setDeletingId(null);
+    };
+
+    // Automated Campaign Handlers
+    const [sendingAutomated, setSendingAutomated] = useState<string | null>(null);
+
+    const handleSendBirthdayCampaign = async () => {
+        if (emailConfigured === false) {
+            toast({
+                title: "Email not configured",
+                description: "Please configure Brevo API to send emails",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        setSendingAutomated('birthday');
+        try {
+            const result = await adminApi.sendBirthdayCampaign();
+            toast({ title: `Birthday campaign sent to ${result.recipients || result.sentCount || 0} recipients` });
+            loadData();
+        } catch (err: any) {
+            console.error('Birthday campaign error:', err);
+            toast({
+                title: "Failed to send campaign",
+                description: err.message || "Email service may not be configured",
+                variant: "destructive"
+            });
+        } finally {
+            setSendingAutomated(null);
+        }
+    };
+
+    const handleSendReengagementCampaign = async () => {
+        if (emailConfigured === false) {
+            toast({
+                title: "Email not configured",
+                description: "Please configure Brevo API to send emails",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        setSendingAutomated('reengagement');
+        try {
+            const result = await adminApi.sendReengagementCampaign();
+            toast({ title: `Re-engagement campaign sent to ${result.recipients || result.sentCount || 0} recipients` });
+            loadData();
+        } catch (err: any) {
+            console.error('Re-engagement campaign error:', err);
+            toast({
+                title: "Failed to send campaign",
+                description: err.message || "Email service may not be configured",
+                variant: "destructive"
+            });
+        } finally {
+            setSendingAutomated(null);
+        }
+    };
+
+    const handleSendSeasonalCampaign = async (season?: string) => {
+        if (emailConfigured === false) {
+            toast({
+                title: "Email not configured",
+                description: "Please configure Brevo API to send emails",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        setSendingAutomated('seasonal');
+        try {
+            const result = await adminApi.sendSeasonalCampaign(season);
+            toast({ title: `Seasonal campaign sent to ${result.recipients || result.sentCount || 0} recipients` });
+            loadData();
+        } catch (err: any) {
+            console.error('Seasonal campaign error:', err);
+            toast({
+                title: "Failed to send campaign",
+                description: err.message || "Email service may not be configured",
+                variant: "destructive"
+            });
+        } finally {
+            setSendingAutomated(null);
         }
     };
 
@@ -303,6 +401,21 @@ const MarketingPromotions = () => {
 
     return (
         <div className="space-y-6">
+            {/* Email Configuration Warning */}
+            {emailConfigured === false && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+                    <div className="text-yellow-600 mt-0.5">
+                        <Bell className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h4 className="font-medium text-yellow-800">Email Service Not Configured</h4>
+                        <p className="text-sm text-yellow-700 mt-1">
+                            To send campaigns, please configure the Brevo API by setting <code className="bg-yellow-100 px-1 rounded">BREVO_API_KEY</code> and <code className="bg-yellow-100 px-1 rounded">BREVO_SENDER_EMAIL</code> environment variables on your backend server.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -349,7 +462,59 @@ const MarketingPromotions = () => {
                 </Card>
             </div>
 
-            {/* Quick Actions */}
+            {/* Quick Actions - Automated Campaigns */}
+            <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-xl p-6 text-white">
+                <div className="flex items-center gap-2 mb-4">
+                    <Calendar className="w-5 h-5" />
+                    <h3 className="font-bold text-lg">Automated Campaigns</h3>
+                </div>
+                <p className="text-white/80 text-sm mb-4">
+                    Send automated emails to your subscribers based on triggers
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <button
+                        onClick={handleSendBirthdayCampaign}
+                        disabled={sendingAutomated === 'birthday'}
+                        className="flex items-center justify-center gap-2 py-3 px-4 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                        {sendingAutomated === 'birthday' ? (
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            <DollarSign className="w-5 h-5" />
+                        )}
+                        <span className="font-medium">🎂 Birthday Campaign</span>
+                    </button>
+                    <button
+                        onClick={handleSendReengagementCampaign}
+                        disabled={sendingAutomated === 'reengagement'}
+                        className="flex items-center justify-center gap-2 py-3 px-4 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                        {sendingAutomated === 'reengagement' ? (
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            <Users className="w-5 h-5" />
+                        )}
+                        <span className="font-medium">💌 Win-back Campaign</span>
+                    </button>
+                    <button
+                        onClick={() => handleSendSeasonalCampaign()}
+                        disabled={sendingAutomated === 'seasonal'}
+                        className="flex items-center justify-center gap-2 py-3 px-4 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                        {sendingAutomated === 'seasonal' ? (
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            <Mail className="w-5 h-5" />
+                        )}
+                        <span className="font-medium">🍽️ Seasonal Menu</span>
+                    </button>
+                </div>
+                <p className="text-white/60 text-xs mt-3">
+                    These campaigns automatically send personalized emails to your subscriber segments
+                </p>
+            </div>
+
+            {/* Quick Actions - Manual Campaigns */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card
                     className="cursor-pointer hover:shadow-lg transition-all"
@@ -515,14 +680,23 @@ const MarketingPromotions = () => {
                                         <Edit className="w-3 h-3" />
                                     </Button>
 
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="text-red-500 hover:text-red-600"
-                                        onClick={() => handleDeleteCampaign(campaign.id)}
-                                    >
-                                        <Trash2 className="w-3 h-3" />
-                                    </Button>
+                                    <ConfirmDialog
+                                        title="Delete Campaign"
+                                        description={`Are you sure you want to delete "${campaign.name}"? This action cannot be undone.`}
+                                        confirmText="Delete"
+                                        cancelText="Cancel"
+                                        variant="destructive"
+                                        onConfirm={() => handleDeleteCampaign(campaign.id)}
+                                        trigger={
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="text-red-500 hover:text-red-600"
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                            </Button>
+                                        }
+                                    />
                                 </div>
                             </div>
                         )) : (
@@ -836,3 +1010,4 @@ const DEMO_CAMPAIGNS = [
 ];
 
 export default MarketingPromotions;
+

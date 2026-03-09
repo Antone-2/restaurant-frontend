@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { X, CheckCircle, Truck, ShoppingBag, CreditCard, MapPin, Phone, User, Clock, ChevronRight, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import env from '@/lib/env';
-
-const API_BASE_URL = `${env.VITE_API_URL}/api`;
+import { API_BASE_URL } from '@/lib/apiBaseUrl';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,6 +66,7 @@ const CheckoutFlow = ({ isOpen, onClose }: CheckoutFlowProps) => {
                 phone: formData.phone,
                 orderType: formData.orderType,
                 items: items.map((item) => ({
+                    menuItemId: item.id,
                     name: item.name,
                     price: item.price,
                     quantity: item.quantity,

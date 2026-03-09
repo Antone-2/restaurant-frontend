@@ -3,7 +3,18 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "./use-toast";
 import env from "../lib/env";
 
-const API_URL = env.VITE_API_URL;
+const isDev = import.meta.env.DEV;
+
+// In development, use relative URL to leverage Vite proxy
+// In production, use the configured VITE_API_URL
+const getApiUrl = () => {
+    if (isDev) {
+        return '';
+    }
+    return env.VITE_API_URL || '';
+};
+
+const API_URL = getApiUrl();
 
 export interface CartItem {
     _id?: string;

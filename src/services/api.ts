@@ -1,6 +1,18 @@
 import env from '../lib/env';
 
-const API_BASE_URL = env.VITE_API_URL.endsWith('/api') ? env.VITE_API_URL : `${env.VITE_API_URL}/api`;
+const isDev = import.meta.env.DEV;
+
+const getApiBaseUrl = () => {
+    if (isDev) {
+        // Development: use relative path - Vite proxy will forward to localhost:3001
+        return '/api';
+    }
+    // Production: use configured API URL
+    const prodUrl = env.VITE_API_URL.endsWith('/api') ? env.VITE_API_URL : `${env.VITE_API_URL}/api`;
+    return prodUrl;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Simple in-memory cache with TTL support
 interface CacheEntry<T> {
@@ -525,7 +537,7 @@ export const ordersApi = {
 // Reservations API
 export const reservationsApi = {
     create: async (reservationData: any) => {
-        const response = await fetch(`${API_BASE_URL}/reservations`, {
+        const response = await fetch(`${API_BASE_URL}/reservations/auto-confirm`, {
             method: 'POST',
             headers: getHeaders(false),
             body: JSON.stringify(reservationData)
@@ -533,18 +545,62 @@ export const reservationsApi = {
         return handleResponse<any>(response);
     },
 
+    // Get reservation by ID (customer lookup)
+    getById: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/reservations/${id}`, {
+            headers: getHeaders(false)
+        });
+        return handleResponse<any>(response);
+    },
+
+    // Get reservations by email (for authenticated users)
+    getByEmail: async (email: string) => {
+        const response = await fetch(`${API_BASE_URL}/reservations?email=${encodeURIComponent(email)}`, {
+            headers: getHeaders(false)
+        });
+        return handleResponse<any>(response);
+    },
+
+    // Cancel reservation (customer)
+    cancelReservation: async (id: string, email: string, phone: string) => {
+        const response = await fetch(`${API_BASE_URL}/reservations/${id}/cancel`, {
+            method: 'POST',
+            headers: getHeaders(false),
+            body: JSON.stringify({ email, phone })
+        });
+        return handleResponse<any>(response);
+    },
+
+    // Modify reservation (customer)
+    modifyReservation: async (id: string, data: { email: string; phone: string; date?: string; time?: string; guests?: number; specialRequests?: string }) => {
+        const response = await fetch(`${API_BASE_URL}/reservations/${id}/modify`, {
+            method: 'PUT',
+            headers: getHeaders(false),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    // Get available time slots
+    getAvailableTimeSlots: async (date: string) => {
+        const response = await fetch(`${API_BASE_URL}/timeslots/available?date=${date}`);
+        return handleResponse<any>(response);
+    },
+
+    // Check blacklist status
+    checkBlacklist: async (phone: string, email?: string) => {
+        const params = new URLSearchParams();
+        params.append('phone', phone);
+        if (email) params.append('email', email);
+        const response = await fetch(`${API_BASE_URL}/reservations/check-blacklist?${params.toString()}`);
+        return handleResponse<any>(response);
+    },
+
     getAll: async () => {
         const response = await fetch(`${API_BASE_URL}/reservations`, {
             headers: getHeaders(true)
         });
-        return handleResponse<any[]>(response);
-    },
-
-    getById: async (id: string) => {
-        const response = await fetch(`${API_BASE_URL}/reservations/${id}`, {
-            headers: getHeaders(true)
-        });
-        return handleResponse<any>(response);
+        return handleResponse<{ reservations: any[] } | any[]>(response);
     },
 
     update: async (id: string, reservationData: any) => {
@@ -590,6 +646,40 @@ export const parkingApi = {
             headers: getHeaders(true)
         });
         return handleResponse<any[]>(response);
+    },
+
+    getById: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/parking/${id}`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    update: async (id: string, parkingData: any) => {
+        const response = await fetch(`${API_BASE_URL}/parking/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(true),
+            body: JSON.stringify(parkingData)
+        });
+        return handleResponse<any>(response);
+    },
+
+    delete: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/parking/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(true)
+        });
+        return handleResponse<void>(response);
+    },
+
+    // Admin method to add new parking reservation
+    adminAdd: async (parkingData: any) => {
+        const response = await fetch(`${API_BASE_URL}/parking/admin/add`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(parkingData)
+        });
+        return handleResponse<any>(response);
     }
 };
 
@@ -660,6 +750,59 @@ export const eventsApi = {
     }
 };
 
+// Special Events API
+// Note: Backend endpoint is at /events/special
+const SPECIAL_EVENTS_BASE = `${API_BASE_URL}/events/special`;
+
+export const specialEventsApi = {
+    create: async (eventData: any) => {
+        const response = await fetch(`${SPECIAL_EVENTS_BASE}`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(eventData)
+        });
+        return handleResponse<any>(response);
+    },
+
+    getAll: async (params?: { upcoming?: boolean; type?: string }) => {
+        const queryParams = new URLSearchParams();
+        if (params?.upcoming) queryParams.append('upcoming', 'true');
+        if (params?.type) queryParams.append('type', params.type);
+
+        const queryString = queryParams.toString();
+        const url = queryString ? `${SPECIAL_EVENTS_BASE}?${queryString}` : SPECIAL_EVENTS_BASE;
+
+        const response = await fetch(url, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any[]>(response);
+    },
+
+    getById: async (id: string) => {
+        const response = await fetch(`${SPECIAL_EVENTS_BASE}/${id}`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    update: async (id: string, eventData: any) => {
+        const response = await fetch(`${SPECIAL_EVENTS_BASE}/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(true),
+            body: JSON.stringify(eventData)
+        });
+        return handleResponse<any>(response);
+    },
+
+    delete: async (id: string) => {
+        const response = await fetch(`${SPECIAL_EVENTS_BASE}/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(true)
+        });
+        return handleResponse<void>(response);
+    }
+};
+
 // Contact API
 export const contactApi = {
     submit: async (contactData: { name: string; email: string; phone: string; subject: string; message: string }) => {
@@ -669,16 +812,26 @@ export const contactApi = {
             body: JSON.stringify(contactData)
         });
         return handleResponse<any>(response);
+    },
+
+    // Accommodation booking
+    bookAccommodation: async (bookingData: { name: string; email: string; phone: string; checkInDate: string; checkOutDate: string; roomType: string; guests?: string; specialRequests?: string; accommodationId?: string }) => {
+        const response = await fetch(`${API_BASE_URL}/contact/accommodation-booking`, {
+            method: 'POST',
+            headers: getHeaders(false),
+            body: JSON.stringify(bookingData)
+        });
+        return handleResponse<any>(response);
     }
 };
 
 // Subscribers API
 export const subscribersApi = {
-    subscribe: async (email: string) => {
-        const response = await fetch(`${API_BASE_URL}/subscribe`, {
+    subscribe: async (data: { email: string; name?: string; phone?: string; birthday?: string }) => {
+        const response = await fetch(`${API_BASE_URL}/contact/subscribe`, {
             method: 'POST',
             headers: getHeaders(false),
-            body: JSON.stringify({ email })
+            body: JSON.stringify(data)
         });
         return handleResponse<any>(response);
     }
@@ -712,6 +865,105 @@ export const adminApi = {
         return handleResponse<any[]>(response);
     },
 
+    // Accommodation Management
+    getAccommodations: async (filters?: { type?: string; status?: string; search?: string }) => {
+        const params = new URLSearchParams();
+        if (filters?.type && filters.type !== 'all') params.append('type', filters.type);
+        if (filters?.status && filters.status !== 'all') params.append('status', filters.status);
+        if (filters?.search) params.append('search', filters.search);
+
+        const response = await fetch(`${API_BASE_URL}/admin/accommodations?${params.toString()}`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    getAccommodationStats: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/accommodations/stats`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    createAccommodation: async (data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/accommodations`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    updateAccommodation: async (id: string, data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/accommodations/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    deleteAccommodation: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/accommodations/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(true)
+        });
+        return handleResponse<void>(response);
+    },
+
+    // Partnership Management
+    getPublicPartnerships: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/public/partnerships`);
+        if (!response.ok) throw new Error('Failed to fetch partnerships');
+        return response.json();
+    },
+
+    getPartnerships: async (filters?: { type?: string; status?: string; category?: string; search?: string }) => {
+        const params = new URLSearchParams();
+        if (filters?.type && filters.type !== 'all') params.append('type', filters.type);
+        if (filters?.status && filters.status !== 'all') params.append('status', filters.status);
+        if (filters?.category && filters.category !== 'all') params.append('category', filters.category);
+        if (filters?.search) params.append('search', filters.search);
+
+        const response = await fetch(`${API_BASE_URL}/admin/partnerships?${params.toString()}`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    getPartnershipStats: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/partnerships/stats`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    createPartnership: async (data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/partnerships`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    updatePartnership: async (id: string, data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/partnerships/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    deletePartnership: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/partnerships/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(true)
+        });
+        return handleResponse<void>(response);
+    },
+
     getRevenue: async (filters?: { period?: string; startDate?: string; endDate?: string }) => {
         const params = new URLSearchParams();
         if (filters?.period) params.append('period', filters.period);
@@ -724,6 +976,17 @@ export const adminApi = {
         return handleResponse<any>(response);
     },
 
+    // Visitor Analytics
+    getVisitorAnalytics: async (range?: '7d' | '30d' | '90d') => {
+        const params = new URLSearchParams();
+        if (range) params.append('range', range);
+        const response = await fetch(`${API_BASE_URL}/admin/analytics/visitors?${params.toString()}`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    // General Analytics (for dashboard)
     getAnalytics: async () => {
         const response = await fetch(`${API_BASE_URL}/admin/analytics`, {
             headers: getHeaders(true)
@@ -1003,6 +1266,279 @@ export const adminApi = {
             headers: getHeaders(true)
         });
         return handleResponse<void>(response);
+    },
+
+    // Automated Campaign Management
+    sendBirthdayCampaign: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/campaigns/automated/birthday`, {
+            method: 'POST',
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    sendReengagementCampaign: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/campaigns/automated/reengagement`, {
+            method: 'POST',
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    sendSeasonalCampaign: async (season?: string) => {
+        const params = new URLSearchParams();
+        if (season) params.append('season', season);
+        const response = await fetch(`${API_BASE_URL}/admin/campaigns/automated/seasonal?${params.toString()}`, {
+            method: 'POST',
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    // Email Status Check
+    getEmailStatus: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/email-status`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    // Room Types Management
+    getRoomTypes: async (accommodationId?: string) => {
+        const params = new URLSearchParams();
+        if (accommodationId) params.append('accommodationId', accommodationId);
+        const response = await fetch(`${API_BASE_URL}/admin/room-types?${params.toString()}`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    // Public Room Types (for accommodation page)
+    getPublicRoomTypes: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/public/room-types`);
+        return handleResponse<any>(response);
+    },
+
+    createRoomType: async (data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/room-types`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    updateRoomType: async (id: string, data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/room-types/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    deleteRoomType: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/room-types/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(true)
+        });
+        return handleResponse<void>(response);
+    },
+
+    // Rooms Management
+    getRooms: async (accommodationId?: string, status?: string) => {
+        const params = new URLSearchParams();
+        if (accommodationId) params.append('accommodationId', accommodationId);
+        if (status && status !== 'all') params.append('status', status);
+        const response = await fetch(`${API_BASE_URL}/admin/rooms?${params.toString()}`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    createRoom: async (data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/rooms`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    updateRoom: async (id: string, data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/rooms/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    deleteRoom: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/rooms/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(true)
+        });
+        return handleResponse<void>(response);
+    },
+
+    // Room Bookings Management
+    getRoomBookings: async (accommodationId?: string, status?: string, startDate?: string, endDate?: string) => {
+        const params = new URLSearchParams();
+        if (accommodationId) params.append('accommodationId', accommodationId);
+        if (status && status !== 'all') params.append('status', status);
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+        const response = await fetch(`${API_BASE_URL}/admin/room-bookings?${params.toString()}`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    createRoomBooking: async (data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/room-bookings`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    updateRoomBooking: async (id: string, data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/room-bookings/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    deleteRoomBooking: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/room-bookings/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(true)
+        });
+        return handleResponse<void>(response);
+    },
+
+    blockRoomDates: async (id: string, data: { startDate: string; endDate: string; reason?: string }) => {
+        const response = await fetch(`${API_BASE_URL}/admin/room-bookings/${id}/block-dates`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    // Housekeeping Management
+    getHousekeepingTasks: async (accommodationId?: string, status?: string, date?: string) => {
+        const params = new URLSearchParams();
+        if (accommodationId) params.append('accommodationId', accommodationId);
+        if (status && status !== 'all') params.append('status', status);
+        if (date) params.append('date', date);
+        const response = await fetch(`${API_BASE_URL}/admin/housekeeping?${params.toString()}`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    createHousekeepingTask: async (data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/housekeeping`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    updateHousekeepingTask: async (id: string, data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/housekeeping/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    deleteHousekeepingTask: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/housekeeping/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(true)
+        });
+        return handleResponse<void>(response);
+    },
+
+    // Guest History Management
+    getGuestHistory: async (search?: string, vip?: boolean) => {
+        const params = new URLSearchParams();
+        if (search) params.append('search', search);
+        if (vip) params.append('vip', 'true');
+        const response = await fetch(`${API_BASE_URL}/admin/guest-history?${params.toString()}`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    getGuestHistoryById: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/guest-history/${id}`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    createGuestHistory: async (data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/guest-history`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    updateGuestHistory: async (id: string, data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/guest-history/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    // Accommodation Staff Management
+    getAccommodationStaff: async (accommodationId?: string, role?: string) => {
+        const params = new URLSearchParams();
+        if (accommodationId) params.append('accommodationId', accommodationId);
+        if (role && role !== 'all') params.append('role', role);
+        const response = await fetch(`${API_BASE_URL}/admin/accommodation-staff?${params.toString()}`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    createAccommodationStaff: async (data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/accommodation-staff`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    updateAccommodationStaff: async (id: string, data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/accommodation-staff/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    deleteAccommodationStaff: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/accommodation-staff/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(true)
+        });
+        return handleResponse<void>(response);
     }
 };
 
@@ -1244,6 +1780,13 @@ export const faqsApi = {
     },
 
     // Admin endpoints
+    getAllForAdmin: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/faqs`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
     create: async (faqData: { question: string; answer: string; category?: string; order?: number }) => {
         const response = await fetch(`${API_BASE_URL}/admin/faqs`, {
             method: 'POST',
@@ -1318,6 +1861,75 @@ export const customerAnalyticsApi = {
         const response = await fetch(`${API_BASE_URL}/admin/analytics/customers/retention`, {
             headers: getHeaders(true)
         });
+        return handleResponse<any>(response);
+    }
+};
+
+// Site Content API
+export const siteContentApi = {
+    getAll: async (type?: string) => {
+        const params = new URLSearchParams();
+        if (type && type !== 'all') params.append('type', type);
+        const response = await fetch(`${API_BASE_URL}/admin/site-content?${params.toString()}`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    create: async (data: { key: string; type: string; title?: string; content?: any; isActive?: boolean; order?: number }) => {
+        const response = await fetch(`${API_BASE_URL}/admin/site-content`, {
+            method: 'POST',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    update: async (id: string, data: { title?: string; content?: any; isActive?: boolean; order?: number }) => {
+        const response = await fetch(`${API_BASE_URL}/admin/site-content/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    delete: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/site-content/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders(true)
+        });
+        return handleResponse<void>(response);
+    },
+
+    // Public endpoints
+    getByKey: async (key: string) => {
+        const response = await fetch(`${API_BASE_URL}/admin/public/site-content/${key}`);
+        return handleResponse<any>(response);
+    }
+};
+
+// Footer Content API
+export const footerApi = {
+    get: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/footer`, {
+            headers: getHeaders(true)
+        });
+        return handleResponse<any>(response);
+    },
+
+    update: async (data: any) => {
+        const response = await fetch(`${API_BASE_URL}/admin/footer`, {
+            method: 'PUT',
+            headers: getHeaders(true),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<any>(response);
+    },
+
+    // Public endpoint
+    getPublic: async () => {
+        const response = await fetch(`${API_BASE_URL}/admin/public/footer`);
         return handleResponse<any>(response);
     }
 };

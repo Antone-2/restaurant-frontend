@@ -1,7 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import env from '../lib/env';
 
-const API_URL = env.VITE_API_URL;
+const isDev = import.meta.env.DEV;
+
+// In development, use relative URL to leverage Vite proxy
+// In production, use the configured VITE_API_URL
+const getApiUrl = () => {
+    if (isDev) {
+        return '';
+    }
+    return env.VITE_API_URL || '';
+};
+
+const API_URL = getApiUrl();
 
 interface PushNotificationOptions {
     onNotification?: (notification: NotificationData) => void;

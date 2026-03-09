@@ -11,6 +11,9 @@ import { useState } from "react";
 import { AnimatedSection, FadeIn, SlideInLeft, SlideInRight } from "@/components/AnimatedSection";
 import StatsDashboard from "@/components/StatsDashboard";
 import { useCart } from "@/context/CartContext";
+import PromotionBanner from "@/components/PromotionBanner";
+import NewsletterSignup from "@/components/NewsletterSignup";
+import SeasonalMenuHighlights from "@/components/SeasonalMenuHighlights";
 
 const Index = () => {
   const { toast } = useToast();
@@ -28,6 +31,9 @@ const Index = () => {
 
   return (
     <main>
+      {/* Promotion Banner - Time-based offers */}
+      <PromotionBanner />
+
       {/* Hero */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
@@ -74,10 +80,7 @@ const Index = () => {
           <AnimatedSection delay={300}>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 text-base px-8">
-                <Link to="/menu">
-                  View Menu
-                  <ArrowRight className="ml-2" size={18} />
-                </Link>
+                <Link to="/menu"><span className="flex items-center">View Menu<ArrowRight className="ml-2" size={18} /></span></Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-primary text-primary bg-transparent hover:bg-primary/10 text-base px-8">
                 <Link to="/order">Order Now</Link>
@@ -239,37 +242,18 @@ const Index = () => {
                 <Link to="/order">Reserve a Table</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10 text-base px-8">
-                <Link to="/menu">View Menu</Link>
+                <Link to="/menu"><span>View Menu</span></Link>
               </Button>
             </div>
           </AnimatedSection>
         </div>
       </section>
 
-      {/* Newsletter */}
-      <section className="py-20 bg-secondary">
-        <div className="container mx-auto px-4 max-w-lg text-center">
-          <AnimatedSection>
-            <Mail size={48} className="mx-auto text-primary mb-4" />
-            <h2 className="font-display text-3xl font-bold text-secondary-foreground mb-3">Stay Updated</h2>
-            <p className="text-secondary-foreground/70 mb-6">Subscribe for exclusive offers, new menu items, and special events.</p>
-          </AnimatedSection>
+      {/* Newsletter - Full signup with name, phone, birthday */}
+      <NewsletterSignup />
 
-          <FadeIn delay={100}>
-            <form onSubmit={handleNewsletter} className="flex gap-2">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="bg-secondary-foreground/10 border-primary/30 text-secondary-foreground placeholder:text-secondary-foreground/40"
-              />
-              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">Subscribe</Button>
-            </form>
-          </FadeIn>
-        </div>
-      </section>
+      {/* Seasonal Menu Highlights */}
+      <SeasonalMenuHighlights />
     </main>
   );
 };

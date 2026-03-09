@@ -1,19 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { adminApi, menuApi } from "@/services/api";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { ConfirmDialogStandalone } from "@/components/ConfirmDialog";
 import {
     Package,
     Search,
     Plus,
     Minus,
     AlertTriangle,
-    TrendingUp,
-    TrendingDown,
     Filter,
     Download,
-    Upload
+    Upload,
+    Trash2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -31,6 +33,21 @@ interface InventoryItem {
     status: "in-stock" | "low-stock" | "out-of-stock" | "overstock";
 }
 
+// API response type from backend
+interface ApiInventoryItem {
+    _id: string;
+    name: string;
+    category: string;
+    quantity: number;
+    unit: string;
+    reorderLevel: number;
+    supplier: string;
+    unitCost: number;
+    lastRestocked: string;
+    expiryDate: string;
+    status: string;
+}
+
 const CATEGORIES = [
     "All Categories",
     "Proteins",
@@ -42,25 +59,100 @@ const CATEGORIES = [
     "Supplies"
 ];
 
-const DEMO_INVENTORY: InventoryItem[] = [
-    { id: "i1", name: "Wagyu Beef", category: "Proteins", quantity: 15, unit: "kg", minStock: 20, maxStock: 50, price: 120, supplier: "Premium Meats Co.", lastUpdated: new Date(), status: "low-stock" },
-    { id: "i2", name: "Atlantic Salmon", category: "Proteins", quantity: 25, unit: "kg", minStock: 15, maxStock: 40, price: 45, supplier: "Ocean Fresh", lastUpdated: new Date(), status: "in-stock" },
-    { id: "i3", name: "Fresh Truffle", category: "Vegetables", quantity: 3, unit: "pcs", minStock: 5, maxStock: 20, price: 200, supplier: "Italian Imports", lastUpdated: new Date(), status: "low-stock" },
-    { id: "i4", name: "Mozzarella Cheese", category: "Dairy", quantity: 0, unit: "kg", minStock: 10, maxStock: 30, price: 25, supplier: "Cheese Masters", lastUpdated: new Date(), status: "out-of-stock" },
-    { id: "i5", name: "Olive Oil (Extra Virgin)", category: "Dry Goods", quantity: 45, unit: "L", minStock: 20, maxStock: 50, price: 18, supplier: "Mediterranean Foods", lastUpdated: new Date(), status: "overstock" },
-    { id: "i6", name: "Champagne", category: "Beverages", quantity: 48, unit: "bottles", minStock: 24, maxStock: 60, price: 85, supplier: "Wine Cellar Ltd", lastUpdated: new Date(), status: "in-stock" },
-    { id: "i7", name: "Black Pepper", category: "Spices", quantity: 8, unit: "kg", minStock: 5, maxStock: 20, price: 30, supplier: "Spice World", lastUpdated: new Date(), status: "in-stock" },
-    { id: "i8", name: "Cocktail Napkins", category: "Supplies", quantity: 500, unit: "pcs", minStock: 1000, maxStock: 5000, price: 0.1, supplier: "Restaurant Supplies", lastUpdated: new Date(), status: "low-stock" },
-];
-
 const InventoryManagement = () => {
     const { toast } = useToast();
-    const [inventory, setInventory] = useState<InventoryItem[]>(DEMO_INVENTORY);
+    const [inventory, setInventory] = useState<InventoryItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("All Categories");
     const [selectedStatus, setSelectedStatus] = useState("all");
 
-    const getStatusBadge = (status: string) => {
+    // Delete dialog state
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+    const [deletingItemName, setDeletingItemName] = useState<string>("");
+    const [deleting, setDeleting] = useState(false);
+
+    // Fetch inventory data from API
+    useEffect(() => {
+        const fetchInventory = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const response = await adminApi.getInventory();
+
+                // Transform API response to match component interface
+                const transformedData: InventoryItem[] = (response as ApiInventoryItem[]).map((item) => ({
+                    id: item._id,
+                    name: item.name,
+                    category: item.category,
+                    quantity: item.quantity || 0,
+                    unit: item.unit || 'kg',
+                    minStock: item.reorderLevel || 5,
+                    maxStock: (item.reorderLevel || 5) * 3, // Estimate max as 3x reorder level
+                    price: item.unitCost || 0,
+                    supplier: item.supplier || '',
+                    lastUpdated: item.lastRestocked ? new Date(item.lastRestocked) : new Date(),
+                    status: item.status as InventoryItem['status'] || 'in-stock'
+                }));
+
+                setInventory(transformedData);
+            } catch (err) {
+                console.error('Failed to fetch inventory:', err);
+                setError('Failed to load inventory data');
+                toast({
+                    title: "Error",
+                    description: "Failed to load inventory data. Please try again.",
+                    variant: "destructive"
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchInventory();
+    }, [toast]);
+
+    // Handle delete click
+    const handleDeleteClick = (id: string, name: string) => {
+        setDeletingItemId(id);
+        setDeletingItemName(name);
+        setDeleteDialogOpen(true);
+    };
+
+    // Handle confirm delete
+    const handleConfirmDelete = async () => {
+        if (!deletingItemId) return;
+
+        try {
+            setDeleting(true);
+            // Use menuApi.delete to permanently delete the menu item
+            await menuApi.delete(deletingItemId);
+
+            toast({
+                title: "Success",
+                description: `${deletingItemName} has been permanently deleted.`,
+            });
+
+            // Remove the deleted item from the local state
+            setInventory(prev => prev.filter(item => item.id !== deletingItemId));
+            setDeleteDialogOpen(false);
+            setDeletingItemId(null);
+            setDeletingItemName("");
+        } catch (err) {
+            console.error('Failed to delete item:', err);
+            toast({
+                title: "Error",
+                description: "Failed to delete item. Please try again.",
+                variant: "destructive"
+            });
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    const getStatusBadge = (status: string): React.ReactNode => {
         switch (status) {
             case "in-stock":
                 return <Badge className="bg-green-500">In Stock</Badge>;
@@ -120,8 +212,41 @@ const InventoryManagement = () => {
         }));
     };
 
+    // Loading state
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <LoadingSpinner />
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64 gap-4">
+                <Package className="w-12 h-12 text-red-500" />
+                <p className="text-red-500">{error}</p>
+                <Button onClick={() => window.location.reload()}>Retry</Button>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6">
+            {/* Delete Confirmation Dialog */}
+            <ConfirmDialogStandalone
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title="Delete Menu Item"
+                description={`Are you sure you want to permanently delete "${deletingItemName}"? This action cannot be undone and the item will be removed from the menu.`}
+                confirmText="Delete Permanently"
+                cancelText="Cancel"
+                variant="destructive"
+                onConfirm={handleConfirmDelete}
+                loading={deleting}
+            />
+
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -172,7 +297,7 @@ const InventoryManagement = () => {
                 </Card>
                 <Card>
                     <CardContent className="pt-4">
-                        <div className="text-2xl font-bold">${stats.totalValue.toLocaleString()}</div>
+                        <div className="text-2xl font-bold">KES {stats.totalValue.toLocaleString()}</div>
                         <p className="text-sm text-muted-foreground">Total Value</p>
                     </CardContent>
                 </Card>
@@ -269,11 +394,21 @@ const InventoryManagement = () => {
                                         <td className="p-4 text-sm text-muted-foreground">
                                             {item.minStock} / {item.maxStock}
                                         </td>
-                                        <td className="p-4">${item.price.toFixed(2)}</td>
+                                        <td className="p-4">KES {item.price.toFixed(2)}</td>
                                         <td className="p-4 text-sm">{item.supplier}</td>
                                         <td className="p-4">{getStatusBadge(item.status)}</td>
                                         <td className="p-4">
-                                            <Button variant="ghost" size="sm">Edit</Button>
+                                            <div className="flex gap-2">
+                                                <Button variant="ghost" size="sm">Edit</Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                    onClick={() => handleDeleteClick(item.id, item.name)}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

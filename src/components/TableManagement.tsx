@@ -3,20 +3,46 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { adminApi, reservationsApi } from "@/services/api";
 import {
     Table as TableIcon,
     Users,
     Clock,
     CheckCircle,
-    XCircle,
     AlertCircle,
     Search,
+    RefreshCw,
     Plus,
     Pencil,
-    RefreshCw
+    Trash2,
+    Calendar
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 const SECTIONS = [
     { id: "window", name: "Window", color: "bg-blue-100" },
@@ -24,6 +50,13 @@ const SECTIONS = [
     { id: "bar", name: "Bar Area", color: "bg-yellow-100" },
     { id: "private", name: "Private Room", color: "bg-purple-100" },
     { id: "vip", name: "VIP Room", color: "bg-amber-100" },
+];
+
+const TABLE_STATUSES = [
+    { id: "available", name: "Available", color: "bg-green-500" },
+    { id: "occupied", name: "Occupied", color: "bg-red-500" },
+    { id: "reserved", name: "Reserved", color: "bg-blue-500" },
+    { id: "maintenance", name: "Maintenance", color: "bg-yellow-500" },
 ];
 
 // Fallback demo tables when API is not available
@@ -55,15 +88,45 @@ interface Table {
     };
 }
 
+interface Reservation {
+    _id?: string;
+    name: string;
+    date: string;
+    time: string;
+    guests: number;
+    tableName?: string;
+}
+
+interface TableFormData {
+    tableNumber: string;
+    capacity: number;
+    section: string;
+    status: string;
+}
+
 const TableManagement = () => {
-    const { toast } = useToast();
     const [tables, setTables] = useState<Table[]>([]);
-    const [reservations, setReservations] = useState<any[]>([]);
+    const [reservations, setReservations] = useState<Reservation[]>([]);
     const [selectedSection, setSelectedSection] = useState<string>("all");
     const [searchTerm, setSearchTerm] = useState("");
-    const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Modal states
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isReserveDialogOpen, setIsReserveDialogOpen] = useState(false);
+    const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Form state
+    const [formData, setFormData] = useState<TableFormData>({
+        tableNumber: "",
+        capacity: 4,
+        section: "main",
+        status: "available",
+    });
 
     useEffect(() => {
         loadTables();
@@ -90,10 +153,121 @@ const TableManagement = () => {
     const loadReservations = async () => {
         try {
             const data = await reservationsApi.getAll();
-            setReservations(data);
+            // Handle different API response formats
+            const reservationsArray = Array.isArray(data)
+                ? data
+                : (data as any)?.reservations || (data as any)?.data || [];
+            setReservations(reservationsArray as Reservation[]);
         } catch (err) {
             console.error("Failed to load reservations:", err);
+            setReservations([]);
         }
+    };
+
+    const handleAddTable = async () => {
+        setIsSubmitting(true);
+        try {
+            const newTable = await adminApi.createTable({
+                tableNumber: formData.tableNumber,
+                capacity: formData.capacity,
+                section: formData.section,
+                status: formData.status,
+            });
+            setTables([...tables, newTable.table || newTable]);
+            setIsAddModalOpen(false);
+            resetForm();
+        } catch (err) {
+            console.error('Error creating table:', err);
+            alert('Failed to create table. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleUpdateTable = async () => {
+        if (!selectedTable) return;
+        setIsSubmitting(true);
+        try {
+            const updatedTable = await adminApi.updateTable(selectedTable._id, {
+                tableNumber: formData.tableNumber,
+                capacity: formData.capacity,
+                section: formData.section,
+                status: formData.status,
+            });
+            setTables(tables.map(t => t._id === selectedTable._id ? { ...t, ...updatedTable.table || updatedTable } : t));
+            setIsEditModalOpen(false);
+            setSelectedTable(null);
+            resetForm();
+        } catch (err) {
+            console.error('Error updating table:', err);
+            alert('Failed to update table. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDeleteTable = async () => {
+        if (!selectedTable) return;
+        setIsSubmitting(true);
+        try {
+            await adminApi.deleteTable(selectedTable._id);
+            setTables(tables.filter(t => t._id !== selectedTable._id));
+            setIsDeleteDialogOpen(false);
+            setSelectedTable(null);
+        } catch (err) {
+            console.error('Error deleting table:', err);
+            alert('Failed to delete table. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleReserveTable = async () => {
+        if (!selectedTable) return;
+        setIsSubmitting(true);
+        try {
+            await adminApi.updateTable(selectedTable._id, {
+                status: "reserved",
+            });
+            setTables(tables.map(t => t._id === selectedTable._id ? { ...t, status: "reserved" as const } : t));
+            setIsReserveDialogOpen(false);
+            setSelectedTable(null);
+        } catch (err) {
+            console.error('Error reserving table:', err);
+            alert('Failed to reserve table. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const openEditModal = (table: Table) => {
+        setSelectedTable(table);
+        setFormData({
+            tableNumber: table.tableNumber,
+            capacity: table.capacity,
+            section: table.section,
+            status: table.status,
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const openDeleteDialog = (table: Table) => {
+        setSelectedTable(table);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const openReserveDialog = (table: Table) => {
+        setSelectedTable(table);
+        setIsReserveDialogOpen(true);
+    };
+
+    const resetForm = () => {
+        setFormData({
+            tableNumber: "",
+            capacity: 4,
+            section: "main",
+            status: "available",
+        });
     };
 
     const getStatusBadge = (status: string) => {
@@ -169,38 +343,52 @@ const TableManagement = () => {
                 </div>
             )}
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4" role="region" aria-label="Table Statistics">
-                <Card aria-label="Total tables count">
-                    <CardContent className="pt-4">
-                        <div className="text-2xl font-bold">{stats.total}</div>
-                        <p className="text-sm text-muted-foreground">Total Tables</p>
-                    </CardContent>
-                </Card>
-                <Card className="border-green-500">
-                    <CardContent className="pt-4">
-                        <div className="text-2xl font-bold text-green-600">{stats.available}</div>
-                        <p className="text-sm text-muted-foreground">Available</p>
-                    </CardContent>
-                </Card>
-                <Card className="border-red-500">
-                    <CardContent className="pt-4">
-                        <div className="text-2xl font-bold text-red-600">{stats.occupied}</div>
-                        <p className="text-sm text-muted-foreground">Occupied</p>
-                    </CardContent>
-                </Card>
-                <Card className="border-blue-500">
-                    <CardContent className="pt-4">
-                        <div className="text-2xl font-bold text-blue-600">{stats.reserved}</div>
-                        <p className="text-sm text-muted-foreground">Reserved</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="pt-4">
-                        <div className="text-2xl font-bold">{stats.totalCapacity}</div>
-                        <p className="text-sm text-muted-foreground">Total Seats</p>
-                    </CardContent>
-                </Card>
+            {/* Stats and Add Button Row */}
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4" role="region" aria-label="Table Statistics">
+                    <Card aria-label="Total tables count">
+                        <CardContent className="pt-4">
+                            <div className="text-2xl font-bold">{stats.total}</div>
+                            <p className="text-sm text-muted-foreground">Total Tables</p>
+                        </CardContent>
+                    </Card>
+                    <Card className="border-green-500">
+                        <CardContent className="pt-4">
+                            <div className="text-2xl font-bold text-green-600">{stats.available}</div>
+                            <p className="text-sm text-muted-foreground">Available</p>
+                        </CardContent>
+                    </Card>
+                    <Card className="border-red-500">
+                        <CardContent className="pt-4">
+                            <div className="text-2xl font-bold text-red-600">{stats.occupied}</div>
+                            <p className="text-sm text-muted-foreground">Occupied</p>
+                        </CardContent>
+                    </Card>
+                    <Card className="border-blue-500">
+                        <CardContent className="pt-4">
+                            <div className="text-2xl font-bold text-blue-600">{stats.reserved}</div>
+                            <p className="text-sm text-muted-foreground">Reserved</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardContent className="pt-4">
+                            <div className="text-2xl font-bold">{stats.totalCapacity}</div>
+                            <p className="text-sm text-muted-foreground">Total Seats</p>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Add New Table Button */}
+                <Button
+                    onClick={() => {
+                        resetForm();
+                        setIsAddModalOpen(true);
+                    }}
+                    className="flex items-center gap-2"
+                >
+                    <Plus className="w-4 h-4" />
+                    Add New Table
+                </Button>
             </div>
 
             {/* Filters */}
@@ -269,19 +457,61 @@ const TableManagement = () => {
                         key={table._id}
                         className={`cursor-pointer hover:shadow-lg transition-all border-2 ${getStatusColor(table.status)}`}
                     >
-                        <CardContent className="pt-4 text-center">
+                        <CardContent className="pt-4">
                             <div className="flex justify-center mb-2">
                                 <div className={`w-12 h-12 rounded-full flex items-center justify-center ${SECTIONS.find(s => s.id === table.section)?.color || "bg-gray-100"}`}>
                                     <TableIcon className="w-6 h-6" />
                                 </div>
                             </div>
-                            <h3 className="font-semibold">Table {table.tableNumber}</h3>
-                            <p className="text-sm text-muted-foreground">{table.capacity} seats</p>
-                            <div className="mt-2">
+                            <h3 className="font-semibold text-center">Table {table.tableNumber}</h3>
+                            <p className="text-sm text-muted-foreground text-center">{table.capacity} seats</p>
+                            <div className="mt-2 flex justify-center">
                                 {getStatusBadge(table.status)}
                             </div>
+
+                            {/* Action Buttons */}
+                            <div className="mt-3 flex justify-center gap-1">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        openEditModal(table);
+                                    }}
+                                    title="Edit Table"
+                                >
+                                    <Pencil className="w-3 h-3" />
+                                </Button>
+                                {table.status === "available" && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            openReserveDialog(table);
+                                        }}
+                                        title="Reserve Table"
+                                        className="text-blue-600 hover:text-blue-700"
+                                    >
+                                        <Calendar className="w-3 h-3" />
+                                    </Button>
+                                )}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        openDeleteDialog(table);
+                                    }}
+                                    title="Delete Table"
+                                    className="text-red-600 hover:text-red-700"
+                                >
+                                    <Trash2 className="w-3 h-3" />
+                                </Button>
+                            </div>
+
                             {table.currentReservation && (
-                                <div className="mt-2 text-xs">
+                                <div className="mt-2 text-xs text-center">
                                     <p className="font-medium">{table.currentReservation.name}</p>
                                     <p className="text-muted-foreground">{table.currentReservation.time}</p>
                                 </div>
@@ -297,8 +527,213 @@ const TableManagement = () => {
                     <p>No tables found</p>
                 </div>
             )}
+
+            {/* Add Table Modal */}
+            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add New Table</DialogTitle>
+                        <DialogDescription>
+                            Enter the details for the new table.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="tableNumber">Table Number</Label>
+                            <Input
+                                id="tableNumber"
+                                value={formData.tableNumber}
+                                onChange={(e) => setFormData({ ...formData, tableNumber: e.target.value })}
+                                placeholder="e.g., 11, VIP-1"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="capacity">Capacity (seats)</Label>
+                            <Input
+                                id="capacity"
+                                type="number"
+                                min={1}
+                                value={formData.capacity}
+                                onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 1 })}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="section">Section</Label>
+                            <Select
+                                value={formData.section}
+                                onValueChange={(value) => setFormData({ ...formData, section: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select section" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {SECTIONS.map(section => (
+                                        <SelectItem key={section.id} value={section.id}>
+                                            {section.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="status">Status</Label>
+                            <Select
+                                value={formData.status}
+                                onValueChange={(value) => setFormData({ ...formData, status: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {TABLE_STATUSES.map(status => (
+                                        <SelectItem key={status.id} value={status.id}>
+                                            {status.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleAddTable}
+                            disabled={isSubmitting || !formData.tableNumber || !formData.capacity}
+                        >
+                            {isSubmitting ? "Adding..." : "Add Table"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Table Modal */}
+            <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit Table</DialogTitle>
+                        <DialogDescription>
+                            Update the details for Table {selectedTable?.tableNumber}.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="editTableNumber">Table Number</Label>
+                            <Input
+                                id="editTableNumber"
+                                value={formData.tableNumber}
+                                onChange={(e) => setFormData({ ...formData, tableNumber: e.target.value })}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="editCapacity">Capacity (seats)</Label>
+                            <Input
+                                id="editCapacity"
+                                type="number"
+                                min={1}
+                                value={formData.capacity}
+                                onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 1 })}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="editSection">Section</Label>
+                            <Select
+                                value={formData.section}
+                                onValueChange={(value) => setFormData({ ...formData, section: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select section" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {SECTIONS.map(section => (
+                                        <SelectItem key={section.id} value={section.id}>
+                                            {section.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="editStatus">Status</Label>
+                            <Select
+                                value={formData.status}
+                                onValueChange={(value) => setFormData({ ...formData, status: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {TABLE_STATUSES.map(status => (
+                                        <SelectItem key={status.id} value={status.id}>
+                                            {status.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleUpdateTable}
+                            disabled={isSubmitting || !formData.tableNumber || !formData.capacity}
+                        >
+                            {isSubmitting ? "Saving..." : "Save Changes"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Table</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete Table {selectedTable?.tableNumber}?
+                            This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDeleteTable}
+                            disabled={isSubmitting}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            {isSubmitting ? "Deleting..." : "Delete Table"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Reserve Table Dialog */}
+            <AlertDialog open={isReserveDialogOpen} onOpenChange={setIsReserveDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Reserve Table</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to mark Table {selectedTable?.tableNumber} as reserved?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleReserveTable}
+                            disabled={isSubmitting}
+                            className="bg-blue-600 hover:bg-blue-700"
+                        >
+                            {isSubmitting ? "Reserving..." : "Reserve Table"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };
 
 export default TableManagement;
+

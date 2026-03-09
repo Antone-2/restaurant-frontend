@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/context/CartContext";
 import { menuApi } from "@/services/api";
-import { ShoppingCart, Leaf, Wheat, Timer, AlertTriangle } from "lucide-react";
+import { LoadingSpinner, PageLoader } from "@/components/ui/LoadingSpinner";
+import { ShoppingCart, Leaf, Wheat, Timer, AlertTriangle, Flame, Star, Sparkles, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -33,6 +34,10 @@ interface MenuItem {
   popular: boolean;
   nutritionalInfo?: NutritionalInfo;
   preparationTime?: number;
+  // Extended fields from menuData
+  dietaryTags?: string[];
+  spicy?: 'mild' | 'medium' | 'hot' | 'extra-hot';
+  popularTags?: string[];
 }
 
 const MenuPage = () => {
@@ -133,8 +138,12 @@ const MenuPage = () => {
     // Dietary filters
     if (dietary.length > 0) {
       filtered = filtered.filter(item => {
-        const itemDietary = item.nutritionalInfo?.dietaryInfo || [];
-        return dietary.every(d => itemDietary.includes(d));
+        const itemDietary = item.nutritionalInfo?.dietaryInfo || item.dietaryTags || [];
+        // Handle spicy filter
+        if (dietary.includes('spicy') && item.spicy) {
+          return true;
+        }
+        return dietary.every(d => d !== 'spicy' && itemDietary.includes(d));
       });
     }
 
@@ -174,11 +183,62 @@ const MenuPage = () => {
   const getDietaryIcon = (diet: string) => {
     switch (diet.toLowerCase()) {
       case 'vegetarian':
-        return <Leaf className="w-3 h-3 text-green-500" />;
+        return <span title="Vegetarian">🥬</span>;
       case 'vegan':
-        return <Leaf className="w-3 h-3 text-green-600" />;
+        return <span title="Vegan">🌱</span>;
       case 'gluten-free':
-        return <Wheat className="w-3 h-3 text-amber-500" />;
+        return <span title="Gluten-Free">🌾</span>;
+      case 'dairy-free':
+        return <span title="Dairy-Free">🥛</span>;
+      case 'nut-free':
+        return <span title="Nut-Free">🥜</span>;
+      case 'halal':
+        return <span title="Halal">☪️</span>;
+      default:
+        return null;
+    }
+  };
+
+  const getSpicyIcon = (level?: string) => {
+    switch (level) {
+      case 'mild':
+        return <span title="Mild" className="text-yellow-600">🌶️</span>;
+      case 'medium':
+        return <span title="Medium" className="text-orange-500">🌶️🌶️</span>;
+      case 'hot':
+        return <span title="Hot" className="text-red-500">🌶️🌶️🌶️</span>;
+      case 'extra-hot':
+        return <span title="Extra Hot" className="text-red-600">🔥</span>;
+      default:
+        return null;
+    }
+  };
+
+  const getPopularTagStyle = (tag: string) => {
+    switch (tag) {
+      case 'chef-special':
+        return 'bg-gradient-to-r from-amber-500 to-orange-500 text-white';
+      case 'customer-favourite':
+        return 'bg-gradient-to-r from-pink-500 to-rose-500 text-white';
+      case 'new':
+        return 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white';
+      case 'limited-time':
+        return 'bg-gradient-to-r from-violet-500 to-purple-500 text-white';
+      default:
+        return 'bg-gray-500 text-white';
+    }
+  };
+
+  const getPopularTagIcon = (tag: string) => {
+    switch (tag) {
+      case 'chef-special':
+        return <Sparkles className="w-3 h-3 mr-1" />;
+      case 'customer-favourite':
+        return <Star className="w-3 h-3 mr-1" />;
+      case 'new':
+        return <span className="mr-1">✨</span>;
+      case 'limited-time':
+        return <Clock className="w-3 h-3 mr-1" />;
       default:
         return null;
     }
@@ -191,6 +251,8 @@ const MenuPage = () => {
     { id: 'gluten-free', label: 'Gluten-Free', icon: '🌾' },
     { id: 'dairy-free', label: 'Dairy-Free', icon: '🥛' },
     { id: 'nut-free', label: 'Nut-Free', icon: '🥜' },
+    { id: 'halal', label: 'Halal', icon: '☪️' },
+    { id: 'spicy', label: '🌶️ Spicy', icon: '🌶️' },
   ];
 
   return (
@@ -307,10 +369,7 @@ const MenuPage = () => {
 
         {/* Menu Items Grid */}
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="text-muted-foreground mt-4">Loading menu...</p>
-          </div>
+          <PageLoader text="Loading delicious menu..." />
         ) : filteredItems.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground text-lg">No items match your filters</p>
@@ -337,19 +396,27 @@ const MenuPage = () => {
                       <p className="text-white font-semibold">Unavailable</p>
                     </div>
                   )}
-                  {item.popular && (
-                    <div className="absolute top-2 right-2 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                      Popular
+                  {/* Popular Tags */}
+                  {item.popularTags && item.popularTags.length > 0 && (
+                    <div className="absolute top-2 right-2 flex flex-col gap-1">
+                      {item.popularTags.map((tag: string) => (
+                        <div key={tag} className={`${getPopularTagStyle(tag)} px-2 py-1 rounded-full text-xs font-semibold flex items-center shadow-sm`}>
+                          {getPopularTagIcon(tag)}
+                          {tag.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                        </div>
+                      ))}
                     </div>
                   )}
                   {/* Dietary Badges */}
-                  {item.nutritionalInfo?.dietaryInfo && item.nutritionalInfo.dietaryInfo.length > 0 && (
-                    <div className="absolute top-2 left-2 flex gap-1">
-                      {item.nutritionalInfo.dietaryInfo.map((diet: string) => (
-                        <div key={diet} className="bg-white/90 p-1 rounded" title={diet}>
+                  {(item.nutritionalInfo?.dietaryInfo || item.dietaryTags) && (
+                    <div className="absolute top-2 left-2 flex gap-1 flex-wrap max-w-[120px]">
+                      {(item.dietaryTags || item.nutritionalInfo?.dietaryInfo || []).map((diet: string) => (
+                        <div key={diet} className="bg-white/90 backdrop-blur-sm p-1 rounded shadow-sm" title={diet}>
                           {getDietaryIcon(diet)}
                         </div>
                       ))}
+                      {/* Spicy Indicator */}
+                      {getSpicyIcon(item.spicy)}
                     </div>
                   )}
                 </div>

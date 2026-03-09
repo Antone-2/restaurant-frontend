@@ -5,9 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import env from '@/lib/env';
-
-const API_BASE_URL = `${env.VITE_API_URL}/api`;
+import { API_BASE_URL } from '@/lib/apiBaseUrl';
 
 const ContactPage = () => {
   const { toast } = useToast();

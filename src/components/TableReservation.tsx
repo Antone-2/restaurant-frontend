@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,13 +7,30 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Clock, Users, CheckCircle, XCircle } from "lucide-react";
-import env from '@/lib/env';
-
-const API_BASE_URL = `${env.VITE_API_URL}/api`;
+import { CalendarDays, Clock, Users, CheckCircle, Loader2 } from "lucide-react";
+import { API_BASE_URL } from '@/lib/apiBaseUrl';
 import { useToast } from "@/components/ui/use-toast";
 
-const TIME_SLOTS = [
+interface Table {
+    _id: string;
+    tableNumber: string;
+    capacity: number;
+    location: string;
+    section: string;
+    status: string;
+    isActive: boolean;
+    name?: string;
+}
+
+interface TimeSlot {
+    id: string;
+    label: string;
+    available: boolean;
+    maxBookings?: number;
+    currentBookings?: number;
+}
+
+const DEFAULT_TIME_SLOTS = [
     { id: "11:00", label: "11:00 AM", available: true },
     { id: "11:30", label: "11:30 AM", available: true },
     { id: "12:00", label: "12:00 PM", available: false },
@@ -31,29 +48,18 @@ const TIME_SLOTS = [
     { id: "21:00", label: "9:00 PM", available: true },
 ];
 
-const TABLES = [
-    { id: "t1", name: "Table 1", capacity: 2, section: "window" },
-    { id: "t2", name: "Table 2", capacity: 2, section: "window" },
-    { id: "t3", name: "Table 3", capacity: 4, section: "main" },
-    { id: "t4", name: "Table 4", capacity: 4, section: "main" },
-    { id: "t5", name: "Table 5", capacity: 6, section: "main" },
-    { id: "t6", name: "Table 6", capacity: 6, section: "private" },
-    { id: "t7", name: "Table 7", capacity: 8, section: "private" },
-    { id: "t8", name: "Table 8", capacity: 4, section: "bar" },
-    { id: "t9", name: "Table 9", capacity: 2, section: "bar" },
-    { id: "t10", name: "VIP Room", capacity: 12, section: "vip" },
+const DEFAULT_TABLES: Table[] = [
+    { _id: "t1", tableNumber: "1", capacity: 2, location: "window", section: "indoor", status: "available", isActive: true },
+    { _id: "t2", tableNumber: "2", capacity: 2, location: "window", section: "indoor", status: "available", isActive: true },
+    { _id: "t3", tableNumber: "3", capacity: 4, location: "main", section: "indoor", status: "available", isActive: true },
+    { _id: "t4", tableNumber: "4", capacity: 4, location: "main", section: "indoor", status: "available", isActive: true },
+    { _id: "t5", tableNumber: "5", capacity: 6, location: "main", section: "indoor", status: "available", isActive: true },
+    { _id: "t6", tableNumber: "6", capacity: 6, location: "private", section: "private", status: "available", isActive: true },
+    { _id: "t7", tableNumber: "7", capacity: 8, location: "private", section: "private", status: "available", isActive: true },
+    { _id: "t8", tableNumber: "8", capacity: 4, location: "bar", section: "bar", status: "available", isActive: true },
+    { _id: "t9", tableNumber: "9", capacity: 2, location: "bar", section: "bar", status: "available", isActive: true },
+    { _id: "t10", tableNumber: "VIP", capacity: 12, location: "vip", section: "vip", status: "available", isActive: true },
 ];
-
-const generateDates = () => {
-    const dates: Date[] = [];
-    const today = new Date();
-    for (let i = 0; i < 30; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() + i);
-        dates.push(date);
-    }
-    return dates;
-};
 
 interface Reservation {
     date: Date;
@@ -80,16 +86,97 @@ const TableReservation = () => {
     });
     const [reservation, setReservation] = useState<Reservation | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+    const [isBlacklisted, setIsBlacklisted] = useState(false);
+    const [blacklistWarning, setBlacklistWarning] = useState('');
+    const [timeSlots, setTimeSlots] = useState<TimeSlot[]>(DEFAULT_TIME_SLOTS);
+    const [tables, setTables] = useState<Table[]>(DEFAULT_TABLES as Table[]);
     const { toast } = useToast();
 
-    const availableTables = useMemo(() => {
-        return TABLES.filter(table => table.capacity >= guests);
-    }, [guests]);
+    // Fetch available time slots when date changes
+    useEffect(() => {
+        const fetchTimeSlots = async () => {
+            if (!selectedDate) return;
 
-    const isTimeAvailable = (timeId: string) => {
-        const slot = TIME_SLOTS.find(s => s.id === timeId);
-        return slot?.available || false;
-    };
+            setIsLoadingSlots(true);
+            try {
+                const dateStr = selectedDate.toISOString().split('T')[0];
+                const response = await fetch(`${API_BASE_URL}/timeslots/available?date=${dateStr}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.timeSlots && data.timeSlots.length > 0) {
+                        setTimeSlots(data.timeSlots);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch time slots:', err);
+                setTimeSlots(DEFAULT_TIME_SLOTS);
+            } finally {
+                setIsLoadingSlots(false);
+            }
+        };
+
+        fetchTimeSlots();
+    }, [selectedDate]);
+
+    // Fetch tables
+    useEffect(() => {
+        const fetchTables = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/tables`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.tables && data.tables.length > 0) {
+                        const formattedTables = data.tables.map((t: any) => ({
+                            _id: t._id,
+                            tableNumber: t.tableNumber,
+                            capacity: t.capacity,
+                            location: t.location || 'indoor',
+                            section: t.section || 'main',
+                            status: t.status,
+                            isActive: t.isActive
+                        }));
+                        setTables(formattedTables);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch tables:', err);
+            }
+        };
+
+        fetchTables();
+    }, []);
+
+    // Check blacklist when phone or email changes
+    useEffect(() => {
+        const checkBlacklist = async () => {
+            if (!formData.phone && !formData.email) return;
+
+            try {
+                const params = new URLSearchParams();
+                if (formData.phone) params.append('phone', formData.phone);
+                if (formData.email) params.append('email', formData.email);
+
+                const response = await fetch(`${API_BASE_URL}/reservations/check-blacklist?${params}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setIsBlacklisted(data.isBlacklisted);
+                    setBlacklistWarning(data.requiresManualApproval ?
+                        'Your reservation requires manual approval due to previous no-shows.' :
+                        data.reason || '');
+                }
+            } catch (err) {
+                console.error('Failed to check blacklist:', err);
+            }
+        };
+
+        const debounce = setTimeout(checkBlacklist, 500);
+        return () => clearTimeout(debounce);
+    }, [formData.phone, formData.email]);
+
+    const availableTables = useMemo(() => {
+        return tables.filter(table => table.capacity >= guests && table.isActive !== false);
+    }, [tables, guests]);
 
     const handleDateSelect = (date: Date | undefined) => {
         setSelectedDate(date);
@@ -114,10 +201,20 @@ const TableReservation = () => {
             return;
         }
 
+        // Check if blacklisted
+        if (isBlacklisted) {
+            toast({
+                title: "Reservation Limited",
+                description: blacklistWarning || "Your account has restrictions. Please contact us directly to make a reservation.",
+                variant: "destructive"
+            });
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
-            const table = TABLES.find(t => t.id === selectedTable);
+            const table = tables.find(t => t._id === selectedTable);
             const reservationData = {
                 name: formData.name,
                 email: formData.email,
@@ -125,18 +222,18 @@ const TableReservation = () => {
                 date: selectedDate.toISOString(),
                 time: selectedTime,
                 guests: guests,
-                tableName: table?.name || "Best Available",
+                tableId: selectedTable,
+                tableName: table?.tableNumber ? `Table ${table.tableNumber}` : "Best Available",
                 specialRequests: formData.specialRequests
             };
 
-            const response = await fetch(`${API_BASE_URL}/reservations`, {
+            const response = await fetch(`${API_BASE_URL}/reservations/auto-confirm`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(reservationData)
             });
 
             if (response.ok) {
-                const result = await response.json();
                 setReservation({
                     date: selectedDate,
                     time: selectedTime,
@@ -148,9 +245,12 @@ const TableReservation = () => {
                     specialRequests: formData.specialRequests
                 });
                 setStep(4);
+                const result = await response.json();
                 toast({
-                    title: "Success!",
-                    description: `Reservation confirmed! Confirmation sent to ${formData.email} and ${formData.phone}`
+                    title: result.confirmed ? "Success!" : "Pending Approval",
+                    description: result.confirmed
+                        ? `Reservation confirmed! Confirmation sent to ${formData.email}`
+                        : `Your reservation is pending approval. We'll notify you at ${formData.email}`
                 });
             } else {
                 const errorData = await response.json();
@@ -179,7 +279,7 @@ const TableReservation = () => {
         setReservation(null);
     };
     if (step === 4 && reservation) {
-        const table = TABLES.find(t => t.id === reservation.tableId);
+        const table = tables.find(t => t._id === reservation.tableId);
         return (
             <Card className="max-w-2xl mx-auto">
                 <CardContent className="pt-6 text-center">
@@ -285,9 +385,12 @@ const TableReservation = () => {
                         {/* Time Selection */}
                         {selectedDate && (
                             <div>
-                                <Label className="mb-2 block">Select Time</Label>
+                                <Label className="mb-2 block">
+                                    Select Time
+                                    {isLoadingSlots && <Loader2 className="inline ml-2 h-4 w-4 animate-spin" />}
+                                </Label>
                                 <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                                    {TIME_SLOTS.map((slot) => (
+                                    {timeSlots.map((slot: TimeSlot) => (
                                         <Button
                                             key={slot.id}
                                             variant={selectedTime === slot.id ? "default" : "outline"}
@@ -326,16 +429,16 @@ const TableReservation = () => {
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                             {availableTables.map((table) => (
                                 <button
-                                    key={table.id}
-                                    onClick={() => handleTableSelect(table.id)}
-                                    className={`p-4 border rounded-lg text-center transition-all ${selectedTable === table.id
+                                    key={table._id}
+                                    onClick={() => handleTableSelect(table._id)}
+                                    className={`p-4 border rounded-lg text-center transition-all ${selectedTable === table._id
                                         ? 'border-primary bg-primary/10 ring-2 ring-primary'
                                         : 'hover:border-primary/50'
                                         }`}
                                 >
-                                    <p className="font-semibold">{table.name}</p>
+                                    <p className="font-semibold">{table.tableNumber === 'VIP' ? 'VIP Room' : `Table ${table.tableNumber}`}</p>
                                     <p className="text-sm text-muted-foreground">{table.capacity} seats</p>
-                                    <Badge variant="outline" className="mt-2 text-xs capitalize">{table.section}</Badge>
+                                    <Badge variant="outline" className="mt-2 text-xs capitalize">{table.location}</Badge>
                                 </button>
                             ))}
                         </div>
@@ -395,6 +498,12 @@ const TableReservation = () => {
                                 placeholder="Enter Email Address"
                             />
                         </div>
+                        {isBlacklisted && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">
+                                <p className="font-semibold">Reservation Limited</p>
+                                <p>{blacklistWarning || 'Your account has restrictions. Please contact us directly to make a reservation.'}</p>
+                            </div>
+                        )}
                         <div>
                             <Label htmlFor="requests">Special Requests (optional)</Label>
                             <Textarea
@@ -412,7 +521,7 @@ const TableReservation = () => {
                                 <p>Date:</p><p>{selectedDate?.toLocaleDateString()}</p>
                                 <p>Time:</p><p>{selectedTime}</p>
                                 <p>Guests:</p><p>{guests} people</p>
-                                <p>Table:</p><p>{TABLES.find(t => t.id === selectedTable)?.name}</p>
+                                <p>Table:</p><p>{tables.find((t: Table) => t._id === selectedTable)?.tableNumber === 'VIP' ? 'VIP Room' : `Table ${tables.find((t: Table) => t._id === selectedTable)?.tableNumber}`}</p>
                             </div>
                         </div>
 

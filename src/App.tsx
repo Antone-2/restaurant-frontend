@@ -12,6 +12,7 @@ import ChatWidget from "@/components/ChatWidget";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import Index from "./pages/Index";
 import MenuPage from "./pages/MenuPage";
+import AccommodationPage from "./pages/AccommodationPage";
 import AboutPage from "./pages/AboutPage";
 import ReviewsPage from "./pages/ReviewsPage";
 import ContactPage from "./pages/ContactPage";
@@ -30,7 +31,19 @@ import NotFound from "./pages/NotFound";
 import OrderHistory from "./pages/OrderHistory";
 import UserProfile from "./pages/UserProfile";
 import ReviewHistory from "./pages/ReviewHistory";
+import LocalPartnerships from "./pages/LocalPartnerships";
+import MyReservations from "./pages/MyReservations";
 import ParkingReservation from "./components/ParkingReservation";
+import FAQPage from "./pages/FAQPage";
+import CancellationPolicyPage from "./pages/CancellationPolicyPage";
+import DeliveryInformationPage from "./pages/DeliveryInformationPage";
+import TakeawayInfoPage from "./pages/TakeawayInfoPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
+import CookiePolicyPage from "./pages/CookiePolicyPage";
+import AllergenDisclaimerPage from "./pages/AllergenDisclaimerPage";
+import ReservationPage from "./pages/ReservationPage";
+import ReservationConfirmationPage from "./pages/ReservationConfirmationPage";
 import { CartProvider } from "@/context/CartContext";
 import { NotificationProvider, NotificationBell } from "@/components/NotificationSystem";
 
@@ -46,7 +59,7 @@ const AppContent = () => {
 
   return (
     <div>
-      {/* Show navigation only on non-auth and non-admin pages */}
+      {/* */}
       {!isAuthPage && !isAdminPage && (
         <>
           <Navbar />
@@ -81,6 +94,7 @@ const AppContent = () => {
 
         <Route path="/" element={<Index />} />
         <Route path="/menu" element={<MenuPage />} />
+        <Route path="/accommodation" element={<AccommodationPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/reviews" element={<ReviewsPage />} />
         <Route path="/contact" element={<ContactPage />} />
@@ -88,10 +102,22 @@ const AppContent = () => {
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/orders/:id" element={<OrderDetailsPage />} />
         <Route path="/events" element={<EventsPage />} />
+        <Route path="/partnerships" element={<LocalPartnerships />} />
+        <Route path="/my-reservations" element={<MyReservations />} />
         <Route path="/parking" element={<ParkingReservation />} />
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/order-history" element={<OrderHistory />} />
         <Route path="/my-reviews" element={<ReviewHistory />} />
+        <Route path="/faq" element={<FAQPage />} />
+        <Route path="/cancellation-policy" element={<CancellationPolicyPage />} />
+        <Route path="/delivery-information" element={<DeliveryInformationPage />} />
+        <Route path="/takeaway-info" element={<TakeawayInfoPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+        <Route path="/cookie-policy" element={<CookiePolicyPage />} />
+        <Route path="/allergen-disclaimer" element={<AllergenDisclaimerPage />} />
+        <Route path="/reservations" element={<ReservationPage />} />
+        <Route path="/reservation-confirmation" element={<ReservationConfirmationPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
 
@@ -106,18 +132,9 @@ const AppContent = () => {
   );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <CartProvider>
-        <NotificationWrapper />
-      </CartProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
-
 // Wrapper to access auth context for notification settings
-const NotificationWrapper = () => {
+// This component must be inside AuthProvider
+const NotificationWrapper = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const adminEmails = ['admin@thequill.com', 'thequillrestaurant@gmail.com', 'pomraningrichard@gmail.com'];
   const isAdmin = !!(user?.email && adminEmails.includes(user.email));
@@ -127,13 +144,25 @@ const NotificationWrapper = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <ScrollToTop />
-          <AppContent />
-        </BrowserRouter>
+        {children}
       </TooltipProvider>
     </NotificationProvider>
   );
 };
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <NotificationWrapper>
+        <CartProvider>
+          <BrowserRouter>
+            <ScrollToTop />
+            <AppContent />
+          </BrowserRouter>
+        </CartProvider>
+      </NotificationWrapper>
+    </AuthProvider>
+  </QueryClientProvider>
+);
 
 export default App;

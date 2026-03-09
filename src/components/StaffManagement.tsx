@@ -24,6 +24,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { ConfirmDialogStandalone } from '@/components/ConfirmDialog';
 import { Plus, MoreVertical, Trash2, Edit2, Users, Clock, DollarSign } from 'lucide-react';
 
 interface Staff {
@@ -43,6 +44,9 @@ export default function StaffManagement() {
     const [staff, setStaff] = useState<Staff[]>([]);
     const [loading, setLoading] = useState(true);
     const [openDialog, setOpenDialog] = useState(false);
+    const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deletingStaffId, setDeletingStaffId] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         name: '',
         role: '',
@@ -109,16 +113,18 @@ export default function StaffManagement() {
         }
     };
 
-    const handleDeleteStaff = async (staffId: string) => {
-        if (!window.confirm('Are you sure you want to delete this staff member?')) return;
+    const handleDeleteStaff = async () => {
+        if (!deletingStaffId) return;
 
         try {
-            await adminApi.deleteStaff(staffId);
+            await adminApi.deleteStaff(deletingStaffId);
 
             toast({
                 title: 'Success',
                 description: 'Staff member deleted',
             });
+            setDeleteDialogOpen(false);
+            setDeletingStaffId(null);
             fetchStaff();
         } catch (error) {
             toast({
@@ -129,11 +135,73 @@ export default function StaffManagement() {
         }
     };
 
+    const confirmDeleteStaff = (staffId: string) => {
+        setDeletingStaffId(staffId);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleEditClick = (member: Staff) => {
+        setEditingStaff(member);
+        setFormData({
+            name: member.name,
+            role: member.role,
+            email: member.email,
+            phone: member.phone,
+            shift: member.shift || 'full-time',
+            hourlyRate: member.hourlyRate || 200,
+            yearsExperience: member.yearsExperience || 0,
+        });
+        setOpenDialog(true);
+    };
+
+    const handleUpdateStaff = async () => {
+        if (!editingStaff) return;
+
+        if (!formData.name || !formData.role || !formData.email || !formData.phone) {
+            toast({
+                title: 'Validation Error',
+                description: 'Please fill in all required fields',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        try {
+            await adminApi.updateStaff(editingStaff._id, formData);
+
+            toast({
+                title: 'Success',
+                description: 'Staff member updated successfully',
+            });
+
+            setFormData({
+                name: '',
+                role: '',
+                email: '',
+                phone: '',
+                shift: 'morning',
+                hourlyRate: 200,
+                yearsExperience: 0,
+            });
+            setEditingStaff(null);
+            setOpenDialog(false);
+            fetchStaff();
+        } catch (error) {
+            toast({
+                title: 'Error',
+                description: 'Failed to update staff member',
+                variant: 'destructive',
+            });
+        }
+    };
+
     const roleColors: Record<string, string> = {
         'Head Chef': 'bg-red-100 text-red-800',
         'Sous Chef': 'bg-orange-100 text-orange-800',
         'Kitchen Staff': 'bg-yellow-100 text-yellow-800',
         'Restaurant Manager': 'bg-blue-100 text-blue-800',
+        'Accommodation Manager': 'bg-indigo-100 text-indigo-800',
+        'Partnerships Manager': 'bg-teal-100 text-teal-800',
         'Waiter': 'bg-green-100 text-green-800',
         'Bartender': 'bg-purple-100 text-purple-800',
     };
@@ -145,7 +213,21 @@ export default function StaffManagement() {
                     <Users className="w-6 h-6" />
                     Staff Management
                 </h2>
-                <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+                <Dialog open={openDialog} onOpenChange={(open) => {
+                    setOpenDialog(open);
+                    if (!open) {
+                        setEditingStaff(null);
+                        setFormData({
+                            name: '',
+                            role: '',
+                            email: '',
+                            phone: '',
+                            shift: 'morning',
+                            hourlyRate: 200,
+                            yearsExperience: 0,
+                        });
+                    }
+                }}>
                     <DialogTrigger asChild>
                         <Button className="gap-2">
                             <Plus className="w-4 h-4" />
@@ -154,9 +236,9 @@ export default function StaffManagement() {
                     </DialogTrigger>
                     <DialogContent className="dark:bg-gray-800 dark:text-white">
                         <DialogHeader>
-                            <DialogTitle>Add New Staff Member</DialogTitle>
+                            <DialogTitle>{editingStaff ? 'Edit Staff Member' : 'Add New Staff Member'}</DialogTitle>
                             <DialogDescription>
-                                Fill in the details for the new staff member
+                                {editingStaff ? 'Update the details for this staff member' : 'Fill in the details for the new staff member'}
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
@@ -252,8 +334,11 @@ export default function StaffManagement() {
                                     className="dark:bg-gray-700 dark:border-gray-600"
                                 />
                             </div>
-                            <Button onClick={handleAddStaff} className="w-full">
-                                Add Staff Member
+                            <Button
+                                onClick={editingStaff ? handleUpdateStaff : handleAddStaff}
+                                className="w-full"
+                            >
+                                {editingStaff ? 'Update Staff Member' : 'Add Staff Member'}
                             </Button>
                         </div>
                     </DialogContent>
@@ -325,12 +410,15 @@ export default function StaffManagement() {
                                         align="end"
                                         className="dark:bg-gray-700 dark:border-gray-600"
                                     >
-                                        <DropdownMenuItem className="dark:text-white">
+                                        <DropdownMenuItem
+                                            onClick={() => handleEditClick(member)}
+                                            className="dark:text-white"
+                                        >
                                             <Edit2 className="w-4 h-4 mr-2" />
                                             Edit
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
-                                            onClick={() => handleDeleteStaff(member._id)}
+                                            onClick={() => confirmDeleteStaff(member._id)}
                                             className="text-red-600 dark:text-red-400"
                                         >
                                             <Trash2 className="w-4 h-4 mr-2" />
@@ -343,6 +431,18 @@ export default function StaffManagement() {
                     ))}
                 </div>
             )}
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmDialogStandalone
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title="Delete Staff Member"
+                description="Are you sure you want to delete this staff member? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="destructive"
+                onConfirm={handleDeleteStaff}
+            />
         </div>
     );
 }

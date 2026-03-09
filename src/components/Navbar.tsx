@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, ShoppingBag, Sun, Moon, LogOut, User, ChevronDown, History, Settings } from "lucide-react";
+import { Menu, X, ShoppingBag, Sun, Moon, LogOut, User, History, Settings, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -16,8 +16,10 @@ import {
 const navLinks = [
   { to: "/", label: "Home" },
   { to: "/menu", label: "Menu" },
+  { to: "/accommodation", label: "Accommodation" },
   { to: "/about", label: "About" },
   { to: "/events", label: "Events" },
+  { to: "/partnerships", label: "Partnerships" },
   { to: "/parking", label: "Parking" },
   { to: "/reviews", label: "Reviews" },
   { to: "/contact", label: "Contact" },
@@ -68,23 +70,28 @@ const Navbar = () => {
           ))}
 
           {/* Theme Toggle */}
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full text-secondary-foreground">
-            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+          <Button variant="ghost" size="icon" asChild={false} onClick={toggleTheme} className="rounded-full text-secondary-foreground">
+            <div className="flex items-center justify-center">
+              {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+            </div>
           </Button>
 
-          {/* Cart */}
+          {/* Cart - Using asChild={false} to avoid Slot issues */}
           <Button
             variant="ghost"
             size="icon"
+            asChild={false}
             className="rounded-full relative text-secondary-foreground"
             onClick={() => setIsCartOpen(true)}
           >
-            <ShoppingBag size={18} />
-            {totalItems > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
-                {totalItems}
-              </span>
-            )}
+            <div className="relative">
+              <ShoppingBag size={18} />
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
+                  {totalItems}
+                </span>
+              )}
+            </div>
           </Button>
 
           {/* Auth Buttons */}
@@ -106,13 +113,23 @@ const Navbar = () => {
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-1">
-                    <User size={16} />
-                    {user?.name || user?.email}
-                    <ChevronDown size={14} />
+                  <Button variant="ghost" size="sm" className="gap-1 rounded-full">
+                    <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-full">
+                      <User size={18} className="text-primary" />
+                    </div>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-2 py-1.5 border-b">
+                    <p className="text-sm font-medium">{user?.name || 'User'}</p>
+                    <p className="text-xs text-muted-foreground">{user?.email}</p>
+                  </div>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="cursor-pointer">
+                      <User size={14} className="mr-2" />
+                      My Profile
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/profile" className="cursor-pointer">
                       <Settings size={14} className="mr-2" />
@@ -123,6 +140,12 @@ const Navbar = () => {
                     <Link to="/order-history" className="cursor-pointer">
                       <History size={14} className="mr-2" />
                       Order History
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-reservations" className="cursor-pointer">
+                      <Calendar size={14} className="mr-2" />
+                      My Reservations
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -142,21 +165,26 @@ const Navbar = () => {
 
         {/* Mobile toggle */}
         <div className="flex items-center gap-2 md:hidden">
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
-            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+          <Button variant="ghost" size="icon" asChild={false} onClick={toggleTheme} className="rounded-full">
+            <div className="flex items-center justify-center">
+              {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+            </div>
           </Button>
           <Button
             variant="ghost"
             size="icon"
+            asChild={false}
             className="relative"
             onClick={() => setIsCartOpen(true)}
           >
-            <ShoppingBag size={18} />
-            {totalItems > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs rounded-full">
-                {totalItems}
-              </span>
-            )}
+            <div className="relative">
+              <ShoppingBag size={18} />
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs rounded-full">
+                  {totalItems}
+                </span>
+              )}
+            </div>
           </Button>
           <button className="text-secondary-foreground p-2" onClick={() => setOpen(!open)}>
             {open ? <X size={24} /> : <Menu size={24} />}

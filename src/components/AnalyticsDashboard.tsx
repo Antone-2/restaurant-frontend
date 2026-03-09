@@ -3,10 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useToast } from '@/hooks/use-toast';
-import { TrendingUp, Users, ShoppingCart, DollarSign } from 'lucide-react';
-import env from '@/lib/env';
-
-const API_BASE_URL = `${env.VITE_API_URL}/api`;
+import { TrendingUp, Users, ShoppingCart, DollarSign, Eye, Globe, Monitor, Smartphone, Tablet } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/apiBaseUrl';
+import { adminApi } from '@/services/api';
 
 interface AnalyticsData {
     dailyRevenue: Array<{ date: string; revenue: number; orders: number }>;
@@ -19,9 +18,25 @@ interface AnalyticsData {
     orderTrends: Array<{ week: string; orders: number; revenue: number }>;
 }
 
+interface VisitorAnalyticsData {
+    totalVisitors: number;
+    uniqueVisitors: number;
+    newVisitors: number;
+    returningVisitors: number;
+    pageViews: number;
+    avgSessionDuration: number;
+    bounceRate: number;
+    dailyVisitors: Array<{ date: string; visitors: number; pageViews: number }>;
+    topPages: Array<{ page: string; views: number }>;
+    topReferrers: Array<{ source: string; visits: number }>;
+    deviceBreakdown: { desktop: number; mobile: number; tablet: number };
+    countryBreakdown: Array<{ country: string; visitors: number }>;
+}
+
 const AnalyticsDashboard = () => {
     const { toast } = useToast();
     const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+    const [visitorAnalytics, setVisitorAnalytics] = useState<VisitorAnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
     const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d'>('30d');
 
@@ -86,7 +101,27 @@ const AnalyticsDashboard = () => {
 
     useEffect(() => {
         fetchAnalytics();
+        fetchVisitorAnalytics();
     }, [dateRange]);
+
+    const fetchVisitorAnalytics = async () => {
+        try {
+            const token = localStorage.getItem('authToken');
+            const response = await fetch(`${API_BASE_URL}/admin/analytics/visitors?range=${dateRange}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setVisitorAnalytics(data);
+            }
+        } catch (err: any) {
+            console.error('Visitor analytics fetch error:', err.message);
+        }
+    };
 
     const fetchAnalytics = async () => {
         setLoading(true);
@@ -120,6 +155,14 @@ const AnalyticsDashboard = () => {
             }
         } catch (err: any) {
             console.error('Analytics fetch error:', err.message);
+            // Check if it's a 404 (endpoint not found) vs other errors
+            if (err.message.includes('404') || err.message.includes('Failed to fetch')) {
+                toast({
+                    title: "Backend Not Connected",
+                    description: "Showing demo data. Deploy backend to see real analytics.",
+                    variant: "default"
+                });
+            }
             setAnalytics(demoAnalytics);
         } finally {
             setLoading(false);
@@ -257,11 +300,12 @@ const AnalyticsDashboard = () => {
 
             {/* Charts Section */}
             <Tabs defaultValue="revenue" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="revenue">Revenue Trend</TabsTrigger>
                     <TabsTrigger value="topitems">Top Items</TabsTrigger>
                     <TabsTrigger value="ordertype">Order Types</TabsTrigger>
                     <TabsTrigger value="peakhours">Peak Hours</TabsTrigger>
+                    <TabsTrigger value="visitors">Site Visitors</TabsTrigger>
                 </TabsList>
 
                 {/* Revenue Trend */}
@@ -369,6 +413,135 @@ const AnalyticsDashboard = () => {
                                     <Bar dataKey="orders" fill="#f59e0b" name="Orders" />
                                 </BarChart>
                             </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* Site Visitors */}
+                <TabsContent value="visitors">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Site Visitor Analytics</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {visitorAnalytics ? (
+                                <div className="space-y-6">
+                                    {/* Visitor Stats Grid */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-xl">
+                                            <p className="text-sm opacity-80">Total Visitors</p>
+                                            <p className="text-2xl font-bold">{visitorAnalytics.totalVisitors.toLocaleString()}</p>
+                                        </div>
+                                        <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-4 rounded-xl">
+                                            <p className="text-sm opacity-80">Unique Visitors</p>
+                                            <p className="text-2xl font-bold">{visitorAnalytics.uniqueVisitors.toLocaleString()}</p>
+                                        </div>
+                                        <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-4 rounded-xl">
+                                            <p className="text-sm opacity-80">Page Views</p>
+                                            <p className="text-2xl font-bold">{visitorAnalytics.pageViews.toLocaleString()}</p>
+                                        </div>
+                                        <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white p-4 rounded-xl">
+                                            <p className="text-sm opacity-80">Bounce Rate</p>
+                                            <p className="text-2xl font-bold">{visitorAnalytics.bounceRate}%</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Daily Visitors Chart */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div>
+                                            <h4 className="text-sm font-medium mb-4">Daily Visitors</h4>
+                                            <ResponsiveContainer width="100%" height={250}>
+                                                <LineChart data={visitorAnalytics.dailyVisitors}>
+                                                    <CartesianGrid strokeDasharray="3 3" />
+                                                    <XAxis dataKey="date" />
+                                                    <YAxis />
+                                                    <Tooltip />
+                                                    <Line type="monotone" dataKey="visitors" stroke="#3b82f6" name="Visitors" />
+                                                </LineChart>
+                                            </ResponsiveContainer>
+                                        </div>
+
+                                        {/* Device Breakdown */}
+                                        <div>
+                                            <h4 className="text-sm font-medium mb-4">Device Breakdown</h4>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <div className="flex justify-between text-sm mb-1">
+                                                        <span className="flex items-center gap-2"><Monitor className="w-4 h-4" /> Desktop</span>
+                                                        <span className="font-medium">{visitorAnalytics.deviceBreakdown.desktop}%</span>
+                                                    </div>
+                                                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-blue-500" style={{ width: `${visitorAnalytics.deviceBreakdown.desktop}%` }} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="flex justify-between text-sm mb-1">
+                                                        <span className="flex items-center gap-2"><Smartphone className="w-4 h-4" /> Mobile</span>
+                                                        <span className="font-medium">{visitorAnalytics.deviceBreakdown.mobile}%</span>
+                                                    </div>
+                                                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-green-500" style={{ width: `${visitorAnalytics.deviceBreakdown.mobile}%` }} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="flex justify-between text-sm mb-1">
+                                                        <span className="flex items-center gap-2"><Tablet className="w-4 h-4" /> Tablet</span>
+                                                        <span className="font-medium">{visitorAnalytics.deviceBreakdown.tablet}%</span>
+                                                    </div>
+                                                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-purple-500" style={{ width: `${visitorAnalytics.deviceBreakdown.tablet}%` }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Top Pages */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div>
+                                            <h4 className="text-sm font-medium mb-4">Top Pages</h4>
+                                            <div className="space-y-2">
+                                                {visitorAnalytics.topPages.slice(0, 5).map((page, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                                        <span className="text-sm truncate">{page.page}</span>
+                                                        <span className="font-medium text-sm">{page.views.toLocaleString()}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <h4 className="text-sm font-medium mb-4">Top Referrers</h4>
+                                            <div className="space-y-2">
+                                                {visitorAnalytics.topReferrers.slice(0, 5).map((ref, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                                        <span className="text-sm">{ref.source}</span>
+                                                        <span className="font-medium text-sm">{ref.visits.toLocaleString()}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* New vs Returning */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="p-4 bg-blue-50 rounded-lg">
+                                            <p className="text-sm text-blue-600">New Visitors</p>
+                                            <p className="text-xl font-bold text-blue-700">{visitorAnalytics.newVisitors.toLocaleString()}</p>
+                                        </div>
+                                        <div className="p-4 bg-green-50 rounded-lg">
+                                            <p className="text-sm text-green-600">Returning Visitors</p>
+                                            <p className="text-xl font-bold text-green-700">{visitorAnalytics.returningVisitors.toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-gray-500">
+                                    <Globe className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                                    <p>No visitor data available yet</p>
+                                    <p className="text-sm">Visitor tracking will appear here once implemented</p>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>
